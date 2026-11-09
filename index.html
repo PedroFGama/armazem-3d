@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Armazém 3D</title>
+<style>
+  :root {
+    --bg: #0b1220; --panel: #111a2e; --line: #1f2b45; --txt: #e6ebf5; --mut: #8b97b3;
+    --A: #ef5b3c; --B: #f2b134; --C: #3f9fc4; --N: #8b97b3;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; height: 100vh; display: flex; flex-direction: column; background: var(--bg); color: var(--txt); font: 14px/1.4 system-ui, Segoe UI, sans-serif; }
+  header { padding: 12px 20px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 650; }
+  header a { color: var(--mut); text-decoration: none; border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; }
+  header a:hover { color: var(--txt); }
+  .spacer { flex: 1; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button { background: transparent; color: var(--mut); border: 0; padding: 7px 12px; cursor: pointer; font: inherit; }
+  .seg button.on { background: #22345c; color: var(--txt); }
+  .btn { background: transparent; color: var(--mut); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; font: inherit; }
+  .btn:hover { color: var(--txt); }
+  main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 7px var(--aw, 520px); }
+  #resizer { cursor: col-resize; background: var(--line); position: relative; touch-action: none; }
+  #resizer::after { content: ''; position: absolute; left: 2px; top: 50%; width: 3px; height: 44px; margin-top: -22px; border-radius: 2px; background: #9aa6bf; }
+  #resizer:hover, #resizer.on { background: #b9c8ea; }
+  body.arrastando { user-select: none; cursor: col-resize; }
+  #cena { position: relative; min-height: 360px; overflow: hidden; }
+  #cena canvas { display: block; }
+  #tip { position: absolute; pointer-events: none; background: #0b1220ee; border: 1px solid var(--line); border-radius: 8px;
+         padding: 8px 10px; font-size: 12.5px; display: none; white-space: nowrap; z-index: 2; }
+  #tip b { font-size: 13.5px; }
+  .legenda { position: absolute; left: 14px; bottom: 12px; font-size: 12px; color: var(--mut); display: flex; gap: 14px; flex-wrap: wrap; }
+  .legenda i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  .dica { position: absolute; right: 14px; bottom: 12px; font-size: 12px; color: var(--mut); }
+  .filtro { position: absolute; left: 14px; top: 12px; display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--mut); }
+  aside { background: var(--panel); overflow-y: auto; padding: 16px; min-width: 0; }
+  aside h2 { font-size: 12.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--mut); margin: 18px 0 8px; font-weight: 600; }
+  aside h2:first-child { margin-top: 0; }
+  .ctl { display: grid; grid-template-columns: 140px 1fr 56px; gap: 8px; align-items: center; margin: 6px 0; font-size: 13px; }
+  .ctl input[type=range] { width: 100%; }
+  .ctl output { text-align: right; font-weight: 600; }
+  .row2 { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 6px 0; font-size: 13px; }
+  .row2 > span { color: var(--mut); min-width: 140px; }
+  .faixa { padding: 8px 20px; border-bottom: 1px solid var(--line); background: var(--panel); display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; }
+  .status { color: var(--mut); font-size: 12px; white-space: pre-line; margin-left: auto; text-align: right; max-width: 45%; }
+  .status.aviso { color: #f2b134; }
+  .status.erro { color: #ff7a7a; }
+  .kpis { display: flex; flex-wrap: wrap; gap: 8px; }
+  .kpi { border: 1px solid var(--line); border-radius: 10px; padding: 5px 12px; background: var(--bg); }
+  .kpi .v { font-size: 17px; font-weight: 700; line-height: 1.2; }
+  .kpi .t { color: var(--mut); font-size: 11.5px; }
+  .kpi.bad .v { color: #ff7a7a; }
+  .nota { color: var(--mut); font-size: 12.5px; margin: 8px 0 0; }
+  .barra { display: grid; grid-template-columns: 175px 1fr 92px; gap: 8px; align-items: center; margin: 5px 0; font-size: 12.5px; }
+  .barra .b { height: 12px; background: #1a2744; border-radius: 6px; overflow: hidden; }
+  .barra .b i { display: block; height: 100%; background: #5b7bd5; }
+  .barra.cur .b i { background: #3ecf8e; }
+  .barra.cur { font-weight: 600; }
+  .barra span:last-child { text-align: right; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--line); }
+  th:nth-child(2), td:nth-child(2) { text-align: left; }
+  th { color: var(--mut); font-weight: 600; position: sticky; top: 0; background: var(--panel); }
+  .scroll { max-height: 380px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
+  #tb tr { cursor: pointer; }
+  tr.hl td { background: #22345c; }
+  tr.sel td { background: #2c4580; }
+  tr.ext td { text-align: left; background: #16213a; color: #b8c4e0; font-size: 12px; line-height: 1.6; cursor: default; }
+  .tag { display: inline-block; min-width: 20px; text-align: center; border-radius: 4px; color: #0b1220; font-weight: 700; padding: 0 4px; }
+  .tag.A { background: var(--A); } .tag.B { background: var(--B); } .tag.C { background: var(--C); } .tag.N { background: var(--N); }
+  .tb2 td, .tb2 th { text-align: center; }
+  .tb2 td:nth-child(2), .tb2 th:nth-child(2) { text-align: center; }
+  .tb2 td.l, .tb2 th.l { text-align: left; }
+  td.dg { background: #22345c; font-weight: 700; }
+  .pos { color: #3ecf8e; } .neg { color: #ff7a7a; }
+  .mut { color: var(--mut); }
+  code { background: #1a2744; padding: 1px 5px; border-radius: 4px; }
+  #busca { width: 100%; background: #0b1220; color: var(--txt); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font: inherit; margin-bottom: 8px; }
+  #selcard { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 12.5px; line-height: 1.55; }
+  #selcard.vazio { color: var(--mut); }
+  #selcard .end { color: var(--mut); word-break: break-word; }
+  .ok { color: #3ecf8e; }
+  @media (max-width: 900px) { body { height: auto; } main { display: block; } #resizer { display: none; } #cena { height: 65vh; } }
+</style>
+<script type="importmap">
+{ "imports": {
+    "three": "./lib/three.module.js",
+    "three/addons/": "./lib/addons/"
+} }
+</script>
+<script src="lib/xlsx.full.min.js"></script>
+</head>
+<body>
+<header>
+  <h1>Armazém 3D · da curva ABC ao endereçamento</h1>
+  <span class="spacer"></span>
+  <a class="btn" href="Planilha_Armazem3D.xlsx" download title="Planilha da aula: 151 SKUs sem classificação ABC, roteiro, abas de cálculo e parâmetros do armazém">Baixar planilha da aula (.xlsx)</a>
+  <label class="btn" title="Lê a aba Base (com as classes que a turma preencheu) e a aba Parâmetros">Importar planilha<input type="file" id="csv" accept=".xlsx,.xls,.csv,.txt" hidden></label>
+  <button class="btn" id="rst">Dados de exemplo</button>
+</header>
+<div class="faixa"><div class="kpis" id="kpis"></div><div class="status" id="status"></div></div>
+<main>
+  <div id="cena">
+    <div id="tip"></div>
+    <div class="filtro">Destacar classe:
+      <div class="seg" id="fcl"><button data-f="T" class="on">Todas</button><button data-f="A">A</button><button data-f="B">B</button><button data-f="C">C</button></div>
+    </div>
+    <div class="legenda">
+      <span><i style="background:var(--A)"></i>Classe A</span>
+      <span><i style="background:var(--B)"></i>Classe B</span>
+      <span><i style="background:var(--C)"></i>Classe C</span>
+      <span><i style="background:var(--N)"></i>Sem classe</span>
+      <span>Cada caixa é desenhada no tamanho real · posições vazias em cinza</span>
+    </div>
+    <div class="dica">Arraste = girar · roda = zoom · clique numa carga ou linha da tabela = rota de picking</div>
+  </div>
+  <div id="resizer" title="Arraste para ajustar a largura"></div>
+  <aside>
+    <h2>Parâmetros da simulação</h2>
+    <div class="row2"><span>Critério da curva ABC</span>
+      <div class="seg" id="scrit"><button data-c="giro" class="on">Giro (retiradas)</button><button data-c="valor">Valor (R$)</button></div></div>
+    <div class="row2"><span>Endereçamento</span>
+      <div class="seg" id="smodo"><button data-m="codigo">Antes · ordem do código</button><button data-m="aleatorio">Antes · aleatório</button><button data-m="abc" class="on">Depois · pela curva ABC</button></div></div>
+    <div class="ctl"><label for="dias">Cobertura de estoque</label><input type="range" id="dias" min="7" max="90" value="45"><output id="odias"></output></div>
+    <div class="ctl"><label for="blocos">Blocos de estantes</label><input type="range" id="blocos" min="2" max="5" value="3"><output id="oblocos"></output></div>
+    <div class="ctl"><label for="mods">Módulos por fila</label><input type="range" id="mods" min="4" max="16" value="9"><output id="omods"></output></div>
+    <div class="ctl"><label for="niveis">Níveis por estante</label><input type="range" id="niveis" min="1" max="6" value="4"><output id="oniveis"></output></div>
+    <p class="nota">Estoque = demanda diária × dias de cobertura → caixas master → paletes. Palete, limites de peso, layout e penalidades vêm da planilha (aba Parâmetros). <b>Depois</b> usa as classes da aba Base: A perto da doca, C no fundo.</p>
+
+    <h2>Produto selecionado</h2>
+    <div id="selcard" class="vazio">Clique numa carga no armazém ou numa linha da tabela.</div>
+
+    <h2>Endereços por produto</h2>
+    <input id="busca" placeholder="Buscar por SKU ou produto…">
+    <div class="scroll"><table id="tb"></table></div>
+    <p class="nota">Endereço = <code>F</code>ila-<code>M</code>ódulo-<code>N</code>ível-<code>P</code>osição. Itens maiores que o palete (mesa, estante, paleteira) ocupam a posição dupla P1+P2.</p>
+
+    <h2>Percurso mensal de separação</h2>
+    <div id="comp"></div>
+    <p class="nota" id="ncomp"></p>
+
+    <h2>Quem ganha e quem perde (por classe)</h2>
+    <table class="tb2" id="gp"></table>
+    <p class="nota" id="ngp"></p>
+
+    <h2>ABC duplo: valor × giro</h2>
+    <table class="tb2" id="mx"></table>
+    <p class="nota" id="nmx"></p>
+
+    <h2>Conferência da classificação</h2>
+    <div id="conf"></div>
+
+    <h2>Uso por nível</h2>
+    <table class="tb2" id="niv"></table>
+    <p class="nota" id="nnivel"></p>
+  </aside>
+</main>
+
+<script src="dados.js"></script>
+<script src="abc.js"></script>
+<script src="armazem.js"></script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const G = ARM.G;
+const COR = { A: new THREE.Color(0xef5b3c), B: new THREE.Color(0xf2b134), C: new THREE.Color(0x3f9fc4), N: new THREE.Color(0x8b97b3) };
+const CLS = ['A', 'B', 'C', 'N'];
+const fmt = (n, d = 0) => n.toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+const brl = n => 'R$ ' + fmt(n, n < 100 ? 2 : 0);
+const cm = n => fmt(n, Number.isInteger(n) ? 0 : 1);
+const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const rotulo = c => c === 'N' ? '–' : c;
+
+let dados = window.DADOS, analise, sim, cur;
+let crit = 'giro', modo = 'abc', dias = 45, cfg = { B: 3, M: 9, N: 4 }, filtro = 'T', sel = -1, hover = -1, busca = '';
+let classeDe, picks = [], inst = {}, dockX = 0, porProduto;
+let limites = ARM.configurar().limites, cruza = 'seguinte';           // vêm da planilha (aba Parâmetros)
+
+// ---------- cena ----------
+const host = document.getElementById('cena');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+host.prepend(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b1220);
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 800);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.maxPolarAngle = Math.PI * 0.495;
+scene.add(new THREE.HemisphereLight(0xffffff, 0x34405f, 1.25));
+const sol = new THREE.DirectionalLight(0xffffff, 1.3); sol.position.set(-15, 40, -10); scene.add(sol);
+const sol2 = new THREE.DirectionalLight(0x99aaff, .5); sol2.position.set(30, 20, 40); scene.add(sol2);
+const estatico = new THREE.Group(), dinamico = new THREE.Group(), destaqueG = new THREE.Group(), rotaG = new THREE.Group();
+scene.add(estatico, dinamico, destaqueG, rotaG);
+
+function resize() { const w = host.clientWidth, h = host.clientHeight; renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(host); resize();
+
+const GBOX = new THREE.BoxGeometry(1, 1, 1), GEDGES = new THREE.EdgesGeometry(GBOX);
+const dummy = new THREE.Object3D();
+function limpar(g) {
+  g.children.slice().forEach(o => {
+    g.remove(o); o.dispose?.();
+    if (o.geometry && o.geometry !== GBOX && o.geometry !== GEDGES) o.geometry.dispose();
+    if (o.material?.map) { o.material.map.dispose(); o.material.dispose(); }
+    else if (o.material && o.userData.proprio) o.material.dispose();
+  });
+}
+function texto(str, cor = '#8b97b3', w = 4) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 140;
+  const g = c.getContext('2d'); let px = 72; g.font = `600 ${px}px system-ui, sans-serif`;
+  const tw = g.measureText(str).width; if (tw > 490) { px = Math.floor(px * 490 / tw); g.font = `600 ${px}px system-ui, sans-serif`; }
+  g.fillStyle = cor; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(str, 256, 70);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthTest: false }));
+  s.scale.set(w, w * 140 / 512, 1); return s;
+}
+function instanciar(n, cor, opts = {}) {
+  return new THREE.InstancedMesh(GBOX, new THREE.MeshStandardMaterial({ color: cor, roughness: .6, metalness: .2, ...opts }), Math.max(n, 1));
+}
+function coloca(im, i, x, y, z, sx, sy, sz) { dummy.position.set(x, y, z); dummy.scale.set(sx, sy, sz); dummy.updateMatrix(); im.setMatrixAt(i, dummy.matrix); }
+
+// ---------- parte fixa: piso, prédio, estantes ----------
+function construirEstatico() {
+  limpar(estatico);
+  const d = ARM.dims(cfg), { W, L, filas } = d; dockX = d.dockX;
+  const piso = new THREE.Mesh(new THREE.PlaneGeometry(W, L), new THREE.MeshStandardMaterial({ color: 0x1c2640, roughness: 1 }));
+  piso.rotation.x = -Math.PI / 2; piso.position.set(W / 2, 0, L / 2); estatico.add(piso);
+  const doca = new THREE.Mesh(new THREE.PlaneGeometry(W, G.FZ), new THREE.MeshStandardMaterial({ color: 0x24407a, roughness: 1 }));
+  doca.rotation.x = -Math.PI / 2; doca.position.set(W / 2, 0.01, G.FZ / 2); estatico.add(doca);
+  for (let k = 0; k <= cfg.B; k++) {                                  // ruas
+    const r = new THREE.Mesh(new THREE.PlaneGeometry(G.AISLE - 0.3, L - G.FZ - G.BACK), new THREE.MeshStandardMaterial({ color: 0x2a3555, roughness: 1 }));
+    r.rotation.x = -Math.PI / 2; r.position.set(ARM.xA(k), 0.012, G.FZ + (L - G.FZ - G.BACK) / 2); estatico.add(r);
+    const t = texto('RUA ' + (k + 1), '#6f7fa6', 2.6); t.position.set(ARM.xA(k), 0.3, L - 1.2); estatico.add(t);
+  }
+  const HP = Math.max(8, cfg.N * G.ALT_NIVEL + 2);                      // altura do galpão
+  const pred = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(W, HP, L)), new THREE.LineBasicMaterial({ color: 0x40507d, transparent: true, opacity: .6 }));
+  pred.position.set(W / 2, HP / 2, L / 2); estatico.add(pred);
+  const nd = Math.max(2, Math.round(W / 7));
+  for (let i = 0; i < nd; i++) {                                      // portas da doca
+    const p = new THREE.Mesh(GBOX, new THREE.MeshStandardMaterial({ color: 0xcf7a2d, transparent: true, opacity: .3, depthWrite: false }));
+    p.scale.set(3, 3.4, .25); p.position.set(W / nd * (i + .5), 1.7, 0.1); p.userData.proprio = true; estatico.add(p);
+  }
+  const td = texto('DOCA · RECEBIMENTO / EXPEDIÇÃO', '#9fb4f0', 11);
+  const pisoTxt = new THREE.Mesh(new THREE.PlaneGeometry(11, 11 * 140 / 512), new THREE.MeshBasicMaterial({ map: td.material.map, transparent: true }));
+  pisoTxt.rotation.x = -Math.PI / 2; pisoTxt.position.set(dockX, 0.03, 4); estatico.add(pisoTxt);
+
+  const nPost = filas * (cfg.M + 1) * 2, nBeam = filas * cfg.M * cfg.N * 2;
+  const postes = instanciar(nPost, 0x2f6fdb), vigas = instanciar(nBeam, 0xe8832a);
+  const H = cfg.N * G.ALT_NIVEL + 0.3; let ip = 0, iv = 0;
+  for (let f = 0; f < filas; f++) {
+    const x = ARM.filaX(f);
+    for (const dx of [-(G.DEPTH / 2 - 0.04), G.DEPTH / 2 - 0.04]) {
+      for (let i = 0; i <= cfg.M; i++) coloca(postes, ip++, x + dx, H / 2, G.FZ + i * G.MOD, 0.08, H, 0.08);
+      for (let m = 0; m < cfg.M; m++) for (let n = 0; n < cfg.N; n++)
+        coloca(vigas, iv++, x + dx, ARM.beamY(n), G.FZ + m * G.MOD + G.MOD / 2, 0.06, 0.12, G.MOD - 0.06);
+    }
+    const t = texto('F' + (f + 1), '#c8d3f0', 1.6); t.position.set(x, H + 0.5, G.FZ - 0.4); estatico.add(t);
+  }
+  estatico.add(postes, vigas);
+  for (let n = 0; n < cfg.N; n++) {
+    const t = texto('N' + n, '#c8d3f0', 1.6); t.position.set(ARM.xA(0) - 1.0, ARM.beamY(n) + 0.7, G.FZ - 0.6); estatico.add(t);
+  }
+  const tgt = new THREE.Vector3(W / 2, 0.6 + cfg.N * 0.4, G.FZ + (cfg.M * G.MOD) * 0.45);
+  const dist = Math.max(W * 1.5, L * 1.15);
+  controls.target.copy(tgt); camera.position.set(tgt.x + dist * 0.5, 6 + dist * 0.8, tgt.z - dist * 0.62); controls.update();
+}
+
+// ---------- parte dinâmica: paletes e caixas reais ----------
+const matN = {}, matD = {};
+for (const c of CLS) {
+  matN[c] = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .6 });
+  matD[c] = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .6, transparent: true, opacity: .08, depthWrite: false });
+}
+const hash = id => { let x = (id + 1) * 2654435761 >>> 0; x ^= x >>> 15; x = Math.imul(x, 2246822519) >>> 0; return (x % 1000) / 1000; };
+const tmpC = new THREE.Color();
+
+function construirDinamico() {
+  limpar(dinamico); picks = []; inst = {};
+  const slots = sim.slots, ocup = cur.ocup;
+  let nVaz = 0, nBase = 0; const cont = { A: 0, B: 0, C: 0, N: 0 };
+  slots.forEach((s, i) => { const o = ocup[i]; if (!o) nVaz++; else if (o.ref === undefined) { nBase++; cont[classeDe.get(o.id)] += o.n; } });
+  const bases = instanciar(nBase, 0x8a6a3c), vazias = instanciar(nVaz, 0x8aa0d6, { transparent: true, opacity: .07, depthWrite: false });
+  for (const c of CLS) inst[c] = new THREE.InstancedMesh(GBOX, matN[c], Math.max(cont[c], 1));
+  const k = { A: 0, B: 0, C: 0, N: 0 }; let ib = 0, iv = 0;
+  const pickMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
+
+  slots.forEach((s, i) => {
+    const o = ocup[i];
+    if (!o) { const hv = G.ALT_CARGA + 0.1; coloca(vazias, iv++, s.x, s.y + hv / 2, s.z, G.PAL_X, hv, G.PAL_Z); return; }
+    if (o.ref !== undefined) return;
+    const pl = sim.plano.get(o.id), a = pl.arr, c = classeDe.get(o.id);
+    const zc = o.tipo === 2 ? s.zMod : s.z, y0 = s.y + G.PAL_H;
+    coloca(bases, ib++, s.x, s.y + G.PAL_H / 2, zc, G.PAL_X, G.PAL_H, o.tipo === 2 ? 2 * G.PAL_Z : G.PAL_Z);
+    tmpC.copy(COR[c]).multiplyScalar(0.72 + 0.4 * hash(o.id));       // variação leve por produto, para distinguir vizinhos
+    const layer = a.nz * a.nx, sz = a.pz / 100, sx = a.px / 100, sh = a.ph / 100;
+    for (let q = 0; q < o.n; q++) {
+      const ly = Math.floor(q / layer), r = q % layer, iz = r % a.nz, ix = Math.floor(r / a.nz);
+      const x = s.x + (ix + .5 - a.nx / 2) * sx, z = zc + (iz + .5 - a.nz / 2) * sz, y = y0 + (ly + .5) * sh;
+      coloca(inst[c], k[c], x, y, z, sx * .97, sh * .97, sz * .97);
+      inst[c].setColorAt(k[c], tmpC); k[c]++;
+    }
+    const layers = Math.max(1, Math.ceil(o.n / layer)), hh = layers * sh;
+    const pk = new THREE.Mesh(GBOX, pickMat);
+    pk.scale.set(a.nx * sx, hh, a.nz * sz); pk.position.set(s.x, y0 + hh / 2, zc);
+    pk.userData = { id: o.id, slot: s, palete: o, classe: c, proprio: false };
+    dinamico.add(pk); picks.push(pk);
+  });
+  for (const c of CLS) { inst[c].instanceMatrix.needsUpdate = true; if (inst[c].instanceColor) inst[c].instanceColor.needsUpdate = true; dinamico.add(inst[c]); }
+  dinamico.add(bases, vazias);
+  refreshMats();
+}
+function refreshMats() { for (const c of CLS) if (inst[c]) inst[c].material = (filtro === 'T' || filtro === c) ? matN[c] : matD[c]; }
+
+function desenharDestaque() {
+  limpar(destaqueG);
+  picks.forEach(p => {
+    const u = p.userData, isSel = u.id === sel, isHov = u.id === hover;
+    if (!isSel && !isHov) return;
+    const l = new THREE.LineSegments(GEDGES, new THREE.LineBasicMaterial({ color: isSel ? 0x3ecf8e : 0xffe066, depthTest: false }));
+    l.userData.proprio = true; l.renderOrder = 4;
+    l.position.copy(p.position); l.scale.copy(p.scale).multiplyScalar(1.04); destaqueG.add(l);
+  });
+}
+
+function desenharRota() {
+  limpar(rotaG);
+  if (sel < 0) return;
+  const lista = porProduto.get(sel); if (!lista?.length) return;
+  const s = lista[0].slot, y = 0.08, zc = G.FZ - 1.5;
+  const pts = [[dockX, y, 0.8], [dockX, y, zc], [s.acessoX, y, zc], [s.acessoX, y, s.z]].map(p => new THREE.Vector3(...p));
+  const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x3ecf8e, depthTest: false }));
+  l.renderOrder = 5; rotaG.add(l);
+  const pino = new THREE.Mesh(new THREE.SphereGeometry(.35, 16, 16), new THREE.MeshBasicMaterial({ color: 0x3ecf8e, depthTest: false }));
+  pino.position.set(s.acessoX, y + .35, s.z); pino.renderOrder = 6; pino.userData.proprio = true; rotaG.add(pino);
+  const t = texto(`${s.codigo} · ${fmt(s.dist, 1)} m`, '#3ecf8e', 6); t.position.set(s.acessoX, 7.2, s.z); rotaG.add(t);
+}
+
+function loop() { requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); }
+
+// ---------- interação ----------
+const tip = document.getElementById('tip'), ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+function pick(e) {
+  const r = renderer.domElement.getBoundingClientRect();
+  mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(mouse, camera);
+  const alvo = filtro === 'T' ? picks : picks.filter(p => p.userData.classe === filtro);
+  return { hit: ray.intersectObjects(alvo)[0], r };
+}
+const arranjoTxt = pl => `${pl.arr.nz}×${pl.arr.nx}×${pl.arr.ny} = ${pl.arr.cap} cx${pl.arr.tipo === 2 ? ' (posição dupla)' : ''}`;
+renderer.domElement.addEventListener('pointermove', e => {
+  const { hit, r } = pick(e), novo = hit ? hit.object.userData.id : -1;
+  if (novo !== hover) { hover = novo; desenharDestaque(); marcarLinhas(); }
+  if (!hit) { tip.style.display = 'none'; return; }
+  const u = hit.object.userData, it = analise.itens[u.id], pl = sim.plano.get(u.id);
+  tip.innerHTML = `<b>${esc(it.nome)}</b> <span class="tag ${u.classe}">${rotulo(u.classe)}</span> <span class="mut">${esc(it.cod)}</span><br>` +
+    `Endereço <b>${u.slot.codigo}</b> · ${fmt(u.slot.dist, 1)} m da doca<br>` +
+    `Caixa: ${cm(pl.cx.c)}×${cm(pl.cx.l)}×${cm(pl.cx.a)} cm · ${fmt(pl.cx.peso, 1)} kg · ${pl.cx.n} un/cx<br>` +
+    `Arranjo: ${arranjoTxt(pl)}<br>Este palete: ${u.palete.n} cx · ${fmt(u.palete.peso)} kg<br>` +
+    `Limitado por <b>${pl.limitante}</b> · giro ${fmt(it.giro)} retiradas/mês`;
+  tip.style.display = 'block';
+  tip.style.left = Math.min(e.clientX - r.left + 14, r.width - 360) + 'px'; tip.style.top = Math.max(50, e.clientY - r.top + 14) + 'px';
+});
+renderer.domElement.addEventListener('pointerleave', () => { hover = -1; tip.style.display = 'none'; desenharDestaque(); marcarLinhas(); });
+let down = null;
+renderer.domElement.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4) return;
+  const { hit } = pick(e); selecionar(hit ? hit.object.userData.id : -1);
+});
+function selecionar(id) { sel = id === sel ? -1 : id; desenharDestaque(); desenharRota(); cartao(); tabela(); }
+function marcarLinhas() {
+  document.querySelectorAll('#tb tr[data-id]').forEach(tr => {
+    tr.classList.toggle('sel', +tr.dataset.id === sel); tr.classList.toggle('hl', +tr.dataset.id === hover);
+  });
+}
+
+// ---------- painel ----------
+function cartao() {
+  const el = document.getElementById('selcard');
+  if (sel < 0) { el.className = 'vazio'; el.innerHTML = 'Clique numa carga no armazém ou numa linha da tabela.'; return; }
+  const it = analise.itens[sel], pl = sim.plano.get(sel), r = analise[crit].find(x => x.id === sel);
+  const ends = (porProduto.get(sel) || []).map(p => p.slot.codigo + (p.palete.tipo === 2 ? '(P1+P2)' : ''));
+  const dif = r.classePlanilha && r.classePlanilha !== r.classeCalc ? ` · <span class="neg">planilha ${r.classePlanilha}, cálculo ${r.classeCalc}</span>` : '';
+  el.className = '';
+  el.innerHTML = `<b>${esc(it.nome)}</b> <span class="tag ${r.classe}">${rotulo(r.classe)}</span> <span class="mut">${esc(it.cod)}${it.cat ? ' · ' + esc(it.cat) : ''}</span><br>` +
+    `#${r.rank} por ${crit === 'valor' ? 'valor' : 'giro'}${dif} · ${brl(it.preco)}/un · ${fmt(it.qtd)} un/ano · <b>${fmt(it.giro)} retiradas/mês</b><br>` +
+    `Unidade: <b>${cm(it.c)}×${cm(it.l)}×${cm(it.a)} cm</b>, ${fmt(it.peso, 2)} kg<br>` +
+    `Caixa master (${pl.cx.n} un): <b>${cm(pl.cx.c)}×${cm(pl.cx.l)}×${cm(pl.cx.a)} cm</b>, ${fmt(pl.cx.peso, 1)} kg<br>` +
+    `No palete: <b>${arranjoTxt(pl)}</b> · pela geometria ${pl.capGeo}, pelo peso ${pl.capPeso} → <b>${pl.cap}</b> (limita: ${pl.limitante})<br>` +
+    `Estoque: ${fmt(pl.estoque)} un → ${fmt(pl.caixas)} cx → <b>${pl.paletes.length} palete(s)</b>, ${fmt(pl.peso)} kg<br>` +
+    `<span class="end">${ends.length ? ends.join(' · ') : 'sem endereço (sem espaço)'}</span>`;
+}
+
+function tabela() {
+  const q = busca.trim().toLowerCase();
+  const rows = analise[crit].filter(r => !q || r.nome.toLowerCase().includes(q) || String(r.cod).toLowerCase().includes(q));
+  document.getElementById('tb').innerHTML =
+    `<tr><th>#</th><th>SKU · Produto</th><th>Cl.</th><th>Cx</th><th>Pal.</th><th>Kg</th><th>Endereço</th></tr>` +
+    rows.map(r => {
+      const p = sim.plano.get(r.id), lista = porProduto.get(r.id) || [];
+      const end = lista.length ? lista[0].slot.codigo + (lista.length > 1 ? ` <span class="mut">+${lista.length - 1}</span>` : '') : '<span class="neg">sem espaço</span>';
+      const todos = lista.map(x => x.slot.codigo + (x.palete.tipo === 2 ? ' (P1+P2)' : '') + ` · ${x.palete.n} cx`);
+      const ext = (r.id === sel && lista.length > 1) ? `<tr class="ext"><td colspan="7"><b>${lista.length} endereços</b> (do mais perto ao mais longe da doca):<br>${todos.join('<br>')}</td></tr>` : '';
+      return `<tr data-id="${r.id}" title="${esc(todos.join(' | '))}"><td>${r.rank}</td><td><span class="mut">${esc(r.cod)}</span> ${esc(r.nome)}</td><td><span class="tag ${r.classe}">${rotulo(r.classe)}</span></td><td>${fmt(p.caixas)}</td><td>${p.paletes.length}</td><td>${fmt(p.peso)}</td><td>${end}</td></tr>${ext}`;
+    }).join('');
+  document.querySelectorAll('#tb tr[data-id]').forEach(tr => {
+    tr.onclick = () => selecionar(+tr.dataset.id);
+    tr.onmouseenter = () => { hover = +tr.dataset.id; desenharDestaque(); marcarLinhas(); };
+    tr.onmouseleave = () => { hover = -1; desenharDestaque(); marcarLinhas(); };
+  });
+  marcarLinhas();
+}
+
+const NOME_MODO = { codigo: 'Antes · ordem do código', aleatorio: 'Antes · aleatório' };
+function painelPercurso() {
+  const c = sim.cenarios;
+  const linhas = [['Depois · ABC por giro', c.giro.met, 'giro'], ['Depois · ABC por valor', c.valor.met, 'valor'], [NOME_MODO.codigo, c.codigo.met, 'codigo'], [NOME_MODO.aleatorio, c.aleatorio.met, 'aleatorio']];
+  const max = Math.max(...linhas.map(l => l[1].percurso)), atual = modo === 'abc' ? crit : modo;
+  document.getElementById('comp').innerHTML = linhas.map(([n, m, k]) =>
+    `<div class="barra ${k === atual ? 'cur' : ''}" title="${fmt(m.distIV, 1)} m por retirada (ida e volta)"><span>${n}</span><div class="b"><i style="width:${m.percurso / max * 100}%"></i></div><span>${fmt(m.percurso)} m</span></div>`).join('');
+  const redG = (1 - c.giro.met.percurso / c.codigo.met.percurso) * 100, redV = (1 - c.valor.met.percurso / c.codigo.met.percurso) * 100;
+  document.getElementById('ncomp').innerHTML =
+    `Percurso total no mês (m, ida e volta), ponderado pelas retiradas. Frente à <b>ordem do código</b>, o ABC por <b>giro</b> reduz <b>${fmt(redG, 0)}%</b> e o ABC por <b>valor</b> ${fmt(redV, 0)}%. ` +
+    `O giro é o que gera deslocamento, por isso o slotting usa a classe de giro; o valor serve para a política de estoque e o controle (apostila, cap. 4 e 12).`;
+}
+
+function painelGanhaPerde() {
+  const rows = analise[crit], antesK = modo === 'aleatorio' ? 'aleatorio' : 'codigo';
+  const ant = sim.cenarios[antesK].met.percursoPorItem, dep = sim.cenarios[crit].met.percursoPorItem;
+  const classes = ['A', 'B', 'C'].concat(rows.some(r => r.classe === 'N') ? ['N'] : []);
+  let tn = 0, ta = 0, td = 0, tr = 0;
+  const lin = classes.map(c => {
+    const ids = rows.filter(r => r.classe === c);
+    const a = ids.reduce((s, r) => s + (ant.get(r.id) || 0), 0), d = ids.reduce((s, r) => s + (dep.get(r.id) || 0), 0), ret = ids.reduce((s, r) => s + r.giro, 0);
+    tn += ids.length; ta += a; td += d; tr += ret;
+    const v = a ? (d / a - 1) * 100 : 0;
+    return `<tr><td><span class="tag ${c}">${rotulo(c)}</span></td><td>${ids.length}</td><td>${fmt(ret)}</td><td>${fmt(a)}</td><td>${fmt(d)}</td><td class="${v <= 0 ? 'pos' : 'neg'}">${v > 0 ? '+' : ''}${fmt(v, 1)}%</td></tr>`;
+  }).join('');
+  const vt = ta ? (td / ta - 1) * 100 : 0;
+  document.getElementById('gp').innerHTML =
+    `<tr><th>Classe ${crit === 'valor' ? 'valor' : 'giro'}</th><th>SKUs</th><th>Retir./mês</th><th>Antes (m)</th><th>Depois (m)</th><th>Variação</th></tr>` + lin +
+    `<tr><td><b>Total</b></td><td><b>${tn}</b></td><td><b>${fmt(tr)}</b></td><td><b>${fmt(ta)}</b></td><td><b>${fmt(td)}</b></td><td class="${vt <= 0 ? 'pos' : 'neg'}"><b>${vt > 0 ? '+' : ''}${fmt(vt, 1)}%</b></td></tr>`;
+  document.getElementById('ngp').textContent =
+    `Antes = ${NOME_MODO[antesK].replace('Antes · ', '')}; Depois = endereçamento pela curva ABC por ${crit === 'valor' ? 'valor' : 'giro'}. Percurso em m/mês (ida e volta). ` +
+    `Todo ganho de um SKU de giro alto vem de empurrar um de giro baixo para o fundo: a classe C pode piorar, e é esperado.`;
+}
+
+function painelMatriz() {
+  const m = analise.matriz, cl = ['A', 'B', 'C'];
+  const totL = c => cl.reduce((s, g) => s + m[c][g], 0), totC = g => cl.reduce((s, c) => s + m[c][g], 0);
+  document.getElementById('mx').innerHTML =
+    `<tr><th class="l"></th>${cl.map(g => `<th>giro ${g}</th>`).join('')}<th>Total</th></tr>` +
+    cl.map(c => `<tr><th class="l">valor ${c}</th>${cl.map(g => `<td class="${c === g ? 'dg' : ''}">${m[c][g]}</td>`).join('')}<td><b>${totL(c)}</b></td></tr>`).join('') +
+    `<tr><th class="l">Total</th>${cl.map(g => `<td><b>${totC(g)}</b></td>`).join('')}<td><b>${analise.matrizN}</b></td></tr>`;
+  const ac = m.A.C, ca = m.C.A;
+  document.getElementById('nmx').innerHTML =
+    `Concordância (diagonal): <b>${fmt(analise.concordancia, 1)}%</b> dos SKUs têm a mesma classe nos dois critérios. ` +
+    `<b>${ac}</b> SKUs são AC (valor alto e giro baixo: caros e parados) e <b>${ca}</b> são CA (baratos e muito retirados: vão para as melhores posições). ` +
+    (analise.matrizN < analise.itens.length ? `${analise.itens.length - analise.matrizN} SKU(s) sem classe ficaram fora da matriz.` : '');
+}
+
+function painelConferencia() {
+  const el = document.getElementById('conf'), u = analise.usaPlanilha;
+  const regra = `cortes ${limites.A}% / ${limites.B}%, item que cruza o limite vai para a classe ${cruza === 'seguinte' ? 'seguinte' : 'anterior'}`;
+  if (!u.valor && !u.giro) {
+    el.innerHTML = `<p class="nota">A planilha importada <b>não traz classes</b> (colunas Classe valor e Classe giro vazias). O app está usando as classes que ele mesmo calculou (${regra}). ` +
+      `Depois que a turma classificar na planilha, importe de novo: o app passa a usar as classes da turma e confere com o cálculo.</p>`;
+    return;
+  }
+  const bloco = (k, nome) => {
+    if (!u[k]) return `<p class="nota"><b>${nome}:</b> sem classes na planilha (usando as calculadas pelo app).</p>`;
+    const dv = analise.conferencia[k], sc = analise.semClasse[k], tot = analise.itens.length;
+    let h = `<p style="margin:8px 0 4px"><b>${nome}:</b> ` +
+      (dv.length ? `<span class="neg">${dv.length} divergência(s)</span>` : `<span class="ok">✔ confere com o cálculo</span>`) +
+      (sc ? ` · <span class="neg">${sc} SKU(s) sem classe</span>` : '') + ` <span class="mut">(${tot - sc - dv.length} de ${tot} corretos)</span></p>`;
+    if (dv.length) {
+      h += `<table class="tb2"><tr><th class="l">SKU · Produto</th><th>Planilha</th><th>Cálculo</th><th>% acum.</th></tr>` +
+        dv.slice(0, 12).map(r => `<tr><td class="l"><span class="mut">${esc(r.cod)}</span> ${esc(r.nome)}</td><td><span class="tag ${r.classePlanilha}">${r.classePlanilha}</span></td><td><span class="tag ${r.classeCalc}">${r.classeCalc}</span></td><td>${fmt(r.acum, 1)}%</td></tr>`).join('') +
+        (dv.length > 12 ? `<tr><td class="l mut" colspan="4">… e mais ${dv.length - 12}</td></tr>` : '') + `</table>`;
+    }
+    return h;
+  };
+  el.innerHTML = bloco('valor', 'ABC por valor') + bloco('giro', 'ABC por giro') + `<p class="nota">Conferência pelo método da apostila: ${regra}. A conferência não altera o armazém: o endereçamento usa as classes da planilha.</p>`;
+}
+
+function painel() {
+  const met = cur.met, ocupPct = met.ocupadas / met.total * 100;
+  document.getElementById('kpis').innerHTML = [
+    [fmt(met.percurso) + ' m', `percurso no mês · ${fmt(met.distIV, 1)} m por retirada (ida e volta)`, false],
+    [fmt(ocupPct, 0) + '%', `ocupação · ${met.paletes} paletes em ${met.ocupadas}/${met.total} posições`, ocupPct > 92],
+    [fmt(met.peso / 1000, 1) + ' t', `peso armazenado · ${analise.itens.length} SKUs`, false],
+    [met.semEndereco, 'paletes sem endereço (falta espaço)', met.semEndereco > 0]
+  ].map(([v, t, bad]) => `<div class="kpi ${bad ? 'bad' : ''}"><div class="v">${v}</div><div class="t">${t}</div></div>`).join('');
+
+  painelPercurso(); painelGanhaPerde(); painelMatriz(); painelConferencia();
+
+  document.getElementById('niv').innerHTML =
+    `<tr><th>Nível</th><th>Posições</th><th>Ocupadas</th><th>Peso (kg)</th></tr>` +
+    Array.from({ length: cfg.N }, (_, n) => n).map(n => `<tr><td>N${n}</td><td>${sim.slots.length / cfg.N}</td><td>${met.ocupNivel[n]}</td><td>${fmt(met.pesoNivel[n])}</td></tr>`).join('');
+  document.getElementById('nnivel').textContent = 'N0 = chão. Paletes pesados só entram nos níveis baixos. Limite por palete (planilha): ' +
+    G.PESO_NIVEL.slice(0, cfg.N).map((v, n) => `N${n} ${fmt(v)} kg`).join(' · ') + '.';
+
+  porProduto = new Map();
+  sim.slots.forEach((s, i) => { const o = cur.ocup[i]; if (o && o.ref === undefined) { if (!porProduto.has(o.id)) porProduto.set(o.id, []); porProduto.get(o.id).push({ slot: s, palete: o }); } });
+  porProduto.forEach(l => l.sort((a, b) => a.slot.dist - b.slot.dist));
+  tabela(); cartao();
+  document.getElementById('odias').textContent = dias + ' d';
+  document.getElementById('oblocos').textContent = cfg.B + ' (' + (cfg.B + 1) + ' ruas)';
+  document.getElementById('omods').textContent = cfg.M;
+  document.getElementById('oniveis').textContent = cfg.N;
+}
+
+// ---------- fluxo ----------
+function recalcular(refazEstatico = false) {
+  sim = ARM.simular(analise, cfg, dias);
+  cur = modo === 'abc' ? sim.cenarios[crit] : sim.cenarios[modo];
+  classeDe = new Map(analise[crit].map(r => [r.id, r.classe]));
+  if (refazEstatico) construirEstatico();
+  construirDinamico(); painel(); desenharDestaque(); desenharRota();
+}
+function carregar(d) { dados = d; analise = ABC.analisar(d, { limites, cruza }); sel = -1; hover = -1; recalcular(true); }
+
+const seg = (id, attr, fn) => document.getElementById(id).addEventListener('click', e => {
+  const v = e.target.dataset[attr]; if (!v) return;
+  document.querySelectorAll(`#${id} button`).forEach(b => b.classList.toggle('on', b === e.target)); fn(v);
+});
+seg('scrit', 'c', v => { crit = v; recalcular(); });
+seg('smodo', 'm', v => { modo = v; recalcular(); });
+seg('fcl', 'f', v => { filtro = v; refreshMats(); });
+document.getElementById('dias').oninput = e => { dias = +e.target.value; recalcular(); };
+document.getElementById('blocos').oninput = e => { cfg = { ...cfg, B: +e.target.value }; recalcular(true); };
+document.getElementById('mods').oninput = e => { cfg = { ...cfg, M: +e.target.value }; recalcular(true); };
+document.getElementById('niveis').oninput = e => { cfg = { ...cfg, N: +e.target.value }; recalcular(true); };
+document.getElementById('busca').oninput = e => { busca = e.target.value; tabela(); };
+
+// barra lateral redimensionável (largura guardada no navegador)
+const mainEl = document.querySelector('main'), rz = document.getElementById('resizer'), aside = document.querySelector('aside');
+const ajustaLargura = w => { w = Math.max(280, Math.min(w, window.innerWidth - 280)); mainEl.style.setProperty('--aw', w + 'px'); return w; };
+try { const w = +localStorage.getItem('armazem.larguraPainel'); if (w) ajustaLargura(w); } catch (e) {}
+rz.addEventListener('pointerdown', e => { rz.setPointerCapture(e.pointerId); rz.classList.add('on'); document.body.classList.add('arrastando'); });
+rz.addEventListener('pointermove', e => { if (rz.hasPointerCapture(e.pointerId)) ajustaLargura(window.innerWidth - e.clientX - 3); });
+rz.addEventListener('pointerup', e => {
+  rz.releasePointerCapture(e.pointerId); rz.classList.remove('on'); document.body.classList.remove('arrastando');
+  try { localStorage.setItem('armazem.larguraPainel', String(Math.round(aside.getBoundingClientRect().width))); } catch (err) {}
+});
+rz.addEventListener('dblclick', () => { ajustaLargura(520); try { localStorage.removeItem('armazem.larguraPainel'); } catch (e) {} });
+
+// ---------- importação da planilha ----------
+const semAcento = t => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+const numero = v => { if (typeof v === 'number') return v; let t = String(v ?? '').trim(); if (!t) return NaN; if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.'); return parseFloat(t); };
+const achaAba = (wb, nome) => { const k = wb.SheetNames.find(x => semAcento(x) === nome); return k ? wb.Sheets[k] : null; };
+function status(msg, avisos = [], erro = false) {
+  const el = document.getElementById('status');
+  el.className = 'status' + (erro ? ' erro' : avisos.length ? ' aviso' : '');
+  el.textContent = msg + avisos.map(a => '\n⚠ ' + a).join('');
+}
+function produtosDeLinhas(linhas) {        // linhas = matriz; primeira linha = cabeçalho
+  const cab = (linhas[0] || []).map(semAcento);
+  const col = (...chaves) => cab.findIndex(h => chaves.some(c => h.includes(c)));
+  const exato = (...chaves) => cab.findIndex(h => chaves.includes(h));
+  const i = { cod: exato('sku', 'codigo', 'cod'), nome: col('produto', 'nome', 'descricao'), cat: col('categoria'),
+    preco: col('custo', 'preco'), qtd: col('demanda', 'quantidade', 'qtd'), ret: col('retirada'),
+    c: col('comprimento'), l: col('largura'), a: col('altura'), peso: col('peso'), un: col('caixa master', 'un por'),
+    cv: col('classe valor'), cg: col('classe giro') };
+  if (i.nome < 0 || i.preco < 0 || i.qtd < 0) throw new Error('Não achei as colunas Produto, Custo unitário e Demanda anual na primeira linha da aba Base.');
+  let ignoradas = 0; const out = [];
+  for (const r of linhas.slice(1)) {
+    if (!r || r.every(x => x === null || x === '')) continue;
+    const nome = String(r[i.nome] ?? '').trim(), preco = numero(r[i.preco]), qtd = numero(r[i.qtd]);
+    if (!nome || !(preco > 0) || !(qtd > 0)) { ignoradas++; continue; }
+    const g = (k, pad) => { const v = i[k] < 0 ? NaN : numero(r[i[k]]); return v > 0 ? v : pad; };
+    out.push({
+      cod: i.cod < 0 ? '' : String(r[i.cod] ?? '').trim(), nome, cat: i.cat < 0 ? '' : String(r[i.cat] ?? '').trim(), preco, qtd,
+      ret: i.ret < 0 ? 0 : g('ret', 0), c: g('c', 20), l: g('l', 20), a: g('a', 20), peso: g('peso', 1), un: Math.round(g('un', 1)),
+      cv: i.cv < 0 ? '' : r[i.cv], cg: i.cg < 0 ? '' : r[i.cg]
+    });
+  }
+  out.ignoradas = ignoradas; out.semRetiradas = i.ret < 0; return out;
+}
+function csvParaLinhas(txt) {
+  const l = txt.replace(/^﻿/, '').split(/\r?\n/).filter(x => x.trim());
+  const sep = l[0].includes(';') ? ';' : ',';
+  return l.map(x => x.split(sep).map(v => v.trim()));
+}
+function parametrosDeLinhas(linhas) {
+  const valores = {}; let n = 0;
+  for (const r of linhas) {
+    const k = String(r?.[0] ?? '').trim();
+    if (!(k in ARM.PADRAO) || r[2] === null || r[2] === undefined || r[2] === '') continue;
+    valores[k] = numero(r[2]); n++;
+  }
+  return { valores, n };
+}
+function aplicar(produtos, params, nParam, origem) {
+  if (produtos.length < 3) throw new Error('Encontrei menos de 3 produtos válidos. Confira a aba Base.');
+  const r = ARM.configurar(params); limites = r.limites; cruza = r.cruza;
+  carregar(produtos);
+  const av = [...r.avisos];
+  if (produtos.ignoradas) av.push(`${produtos.ignoradas} linha(s) de produto ignorada(s) (nome, custo ou demanda vazios/zero).`);
+  if (produtos.semRetiradas || analise.itens.some(x => x.retEstimado)) av.push('Há SKUs sem "Retiradas por mês": usei demanda anual ÷ 12 como giro.');
+  const u = analise.usaPlanilha, n = analise.itens.length;
+  const nv = analise.itens.filter(x => x.cv).length, ng = analise.itens.filter(x => x.cg).length;
+  const classes = (u.valor || u.giro) ? `classes da planilha: valor ${nv}/${n}, giro ${ng}/${n}` : 'planilha sem classes (usando as calculadas)';
+  status(`${origem} · ${n} SKUs · ${classes} · ${nParam ? nParam + ' parâmetros lidos' : 'parâmetros padrão'}`, av);
+}
+document.getElementById('rst').onclick = () => {
+  const r = ARM.configurar({}); limites = r.limites; cruza = r.cruza; carregar(window.DADOS);
+  status(`Dados de exemplo · ${window.DADOS.length} SKUs · sem classes (usando as calculadas) · parâmetros padrão`);
+};
+document.getElementById('csv').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return; e.target.value = '';
+  try {
+    if (/\.(xlsx|xls)$/i.test(f.name)) {
+      if (typeof XLSX === 'undefined') throw new Error('A biblioteca de leitura de Excel não carregou (precisa de internet). Tente de novo ou use um CSV.');
+      const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
+      const wsP = achaAba(wb, 'base') || achaAba(wb, 'produtos');
+      if (!wsP) throw new Error('Não achei a aba "Base" na planilha.');
+      const produtos = produtosDeLinhas(XLSX.utils.sheet_to_json(wsP, { header: 1, raw: true, defval: null }));
+      const wsC = achaAba(wb, 'parametros');
+      const { valores, n } = wsC ? parametrosDeLinhas(XLSX.utils.sheet_to_json(wsC, { header: 1, raw: true, defval: null })) : { valores: {}, n: 0 };
+      aplicar(produtos, valores, n, f.name);
+    } else {
+      aplicar(produtosDeLinhas(csvParaLinhas(await f.text())), {}, 0, f.name);
+    }
+  } catch (err) { status('Não consegui importar: ' + err.message, [], true); }
+};
+
+carregar(window.DADOS);
+status(`Dados de exemplo · ${window.DADOS.length} SKUs · sem classes (usando as calculadas) · parâmetros padrão`);
+loop();
+window.__arm = { get cur() { return cur; }, get sim() { return sim; }, get analise() { return analise; }, selecionar };
+</script>
+</body>
+</html>

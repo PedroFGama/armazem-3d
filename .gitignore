@@ -1,0 +1,13 @@
+# Lista branca: só vai para o GitHub o que está liberado abaixo.
+# (o gabarito do professor, a pasta .claude e arquivos de terceiros ficam de fora de propósito)
+*
+!.gitignore
+!.nojekyll
+!README.md
+!index.html
+!abc.js
+!armazem.js
+!dados.js
+!Planilha_Armazem3D.xlsx
+!lib/
+!lib/**

@@ -1,0 +1,10 @@
+Bibliotecas de terceiros incluídas nesta pasta (cópias sem modificação, para o Armazém 3D funcionar offline)
+
+three.module.js  e  addons/controls/OrbitControls.js
+  Three.js r160 (https://threejs.org) - licença MIT, © 2010-2023 Three.js Authors.
+  Origem: https://unpkg.com/three@0.160.0/
+
+xlsx.full.min.js
+  SheetJS Community Edition 0.18.5 (https://sheetjs.com) - licença Apache-2.0.
+  Origem: https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
+  O cabeçalho de licença original está preservado no início do arquivo.
