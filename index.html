@@ -123,6 +123,7 @@
       <div class="seg" id="scrit"><button data-c="giro" class="on">Giro (retiradas)</button><button data-c="valor">Valor (R$)</button></div></div>
     <div class="row2"><span>Endereçamento</span>
       <div class="seg" id="smodo"><button data-m="codigo">Antes · ordem do código</button><button data-m="aleatorio">Antes · aleatório</button><button data-m="abc" class="on">Depois · pela curva ABC</button></div></div>
+    <p class="nota" id="cortes" style="margin:6px 0 10px"></p>
     <div class="ctl"><label for="dias">Cobertura de estoque</label><input type="range" id="dias" min="7" max="90" value="45"><output id="odias"></output></div>
     <div class="ctl"><label for="blocos">Blocos de estantes</label><input type="range" id="blocos" min="2" max="5" value="3"><output id="oblocos"></output></div>
     <div class="ctl"><label for="mods">Módulos por fila</label><input type="range" id="mods" min="4" max="16" value="9"><output id="omods"></output></div>
@@ -484,6 +485,11 @@ function painelConferencia() {
   el.innerHTML = bloco('valor', 'ABC por valor') + bloco('giro', 'ABC por giro') + `<p class="nota">Conferência pelo método da apostila: ${regra}. A conferência não altera o armazém: o endereçamento usa as classes da planilha.</p>`;
 }
 
+function atualizaCortes() {
+  document.getElementById('cortes').innerHTML =
+    `<b>Da planilha (aba Parâmetros):</b> classe A até ${fmt(limites.A, 1)}% · B até ${fmt(limites.B, 1)}% · o item que cruza o limite vai para a classe <b>${cruza === 'seguinte' ? 'seguinte' : 'anterior'}</b> · percurso × ${fmt(G.IDA_VOLTA, 1)} (ida e volta).`;
+}
+
 function painel() {
   const met = cur.met, ocupPct = met.ocupadas / met.total * 100;
   document.getElementById('kpis').innerHTML = [
@@ -504,7 +510,7 @@ function painel() {
   porProduto = new Map();
   sim.slots.forEach((s, i) => { const o = cur.ocup[i]; if (o && o.ref === undefined) { if (!porProduto.has(o.id)) porProduto.set(o.id, []); porProduto.get(o.id).push({ slot: s, palete: o }); } });
   porProduto.forEach(l => l.sort((a, b) => a.slot.dist - b.slot.dist));
-  tabela(); cartao();
+  tabela(); cartao(); atualizaCortes();
   document.getElementById('odias').textContent = dias + ' d';
   document.getElementById('oblocos').textContent = cfg.B + ' (' + (cfg.B + 1) + ' ruas)';
   document.getElementById('omods').textContent = cfg.M;
