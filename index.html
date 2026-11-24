@@ -6,84 +6,130 @@
 <title>Armazém 3D</title>
 <style>
   :root {
-    --bg: #0b1220; --panel: #111a2e; --line: #1f2b45; --txt: #e6ebf5; --mut: #8b97b3;
+    color-scheme: dark;
+    --bg: #0b1220; --panel: #111a2e; --card: #0e1628; --line: #1f2b45; --txt: #e6ebf5; --mut: #8b97b3;
+    --on: #22345c; --hl: #22345c; --sel: #2c4580; --ext: #16213a; --ext-t: #b8c4e0; --chip: #1a2744; --inp: #0b1220; --tipbg: #0b1220ee;
+    --track: #1a2744; --bar: #5b7bd5; --pos: #3ecf8e; --neg: #ff7a7a; --warn: #f2b134; --grip: #9aa6bf; --grip-h: #b9c8ea; --sombra: 0 2px 10px #0006;
     --A: #ef5b3c; --B: #f2b134; --C: #3f9fc4; --N: #8b97b3;
   }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #e9edf5; --panel: #f4f6fb; --card: #ffffff; --line: #d3dae8; --txt: #1b2438; --mut: #5d6a86;
+    --on: #d9e3fb; --hl: #e3ebfc; --sel: #c9d9fa; --ext: #eef2fb; --ext-t: #3b4868; --chip: #e6ebf6; --inp: #ffffff; --tipbg: #ffffffee;
+    --track: #e1e7f3; --bar: #5b7bd5; --pos: #138a58; --neg: #d63a3a; --warn: #b87a00; --grip: #9aa6bf; --grip-h: #6f86c4; --sombra: 0 2px 10px #1b24381a;
+  }
   * { box-sizing: border-box; }
-  body { margin: 0; height: 100vh; display: flex; flex-direction: column; background: var(--bg); color: var(--txt); font: 14px/1.4 system-ui, Segoe UI, sans-serif; }
-  header { padding: 12px 20px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; }
+  body { margin: 0; height: 100vh; display: flex; flex-direction: column; background: var(--bg); color: var(--txt); font: 14px/1.45 system-ui, Segoe UI, sans-serif; }
+  header { padding: 12px 24px; border-bottom: 1px solid var(--line); background: var(--panel); display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; }
   header h1 { font-size: 18px; margin: 0; font-weight: 650; }
   header a { color: var(--mut); text-decoration: none; border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; }
   header a:hover { color: var(--txt); }
   .spacer { flex: 1; }
-  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--inp); }
   .seg button { background: transparent; color: var(--mut); border: 0; padding: 7px 12px; cursor: pointer; font: inherit; }
-  .seg button.on { background: #22345c; color: var(--txt); }
+  .seg button:hover { color: var(--txt); }
+  .seg button.on { background: var(--on); color: var(--txt); font-weight: 600; }
+  .seg.full { display: flex; }
+  .seg.full button { flex: 1; padding: 8px 6px; font-size: 13px; text-align: center; white-space: normal; line-height: 1.25; }
+  .seg.full button + button { border-left: 1px solid var(--line); }
   .btn { background: transparent; color: var(--mut); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; font: inherit; }
   .btn:hover { color: var(--txt); }
-  main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 7px var(--aw, 520px); }
+  main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 7px var(--aw, 540px); }
   #resizer { cursor: col-resize; background: var(--line); position: relative; touch-action: none; }
-  #resizer::after { content: ''; position: absolute; left: 2px; top: 50%; width: 3px; height: 44px; margin-top: -22px; border-radius: 2px; background: #9aa6bf; }
-  #resizer:hover, #resizer.on { background: #b9c8ea; }
+  #resizer::after { content: ''; position: absolute; left: 2px; top: 50%; width: 3px; height: 44px; margin-top: -22px; border-radius: 2px; background: var(--grip); }
+  #resizer:hover, #resizer.on { background: var(--grip-h); }
   body.arrastando { user-select: none; cursor: col-resize; }
   #cena { position: relative; min-height: 360px; overflow: hidden; }
   #cena canvas { display: block; }
-  #tip { position: absolute; pointer-events: none; background: #0b1220ee; border: 1px solid var(--line); border-radius: 8px;
+  #tip { position: absolute; pointer-events: none; background: var(--tipbg); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--sombra);
          padding: 8px 10px; font-size: 12.5px; display: none; white-space: nowrap; z-index: 2; }
   #tip b { font-size: 13.5px; }
   .legenda { position: absolute; left: 14px; bottom: 12px; font-size: 12px; color: var(--mut); display: flex; gap: 14px; flex-wrap: wrap; }
   .legenda i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
   .dica { position: absolute; right: 14px; bottom: 12px; font-size: 12px; color: var(--mut); }
   .filtro { position: absolute; left: 14px; top: 12px; display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--mut); }
-  aside { background: var(--panel); overflow-y: auto; padding: 16px; min-width: 0; }
-  aside h2 { font-size: 12.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--mut); margin: 18px 0 8px; font-weight: 600; }
-  aside h2:first-child { margin-top: 0; }
-  .ctl { display: grid; grid-template-columns: 140px 1fr 56px; gap: 8px; align-items: center; margin: 6px 0; font-size: 13px; }
-  .ctl input[type=range] { width: 100%; }
-  .ctl output { text-align: right; font-weight: 600; }
-  .row2 { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 6px 0; font-size: 13px; }
-  .row2 > span { color: var(--mut); min-width: 140px; }
-  .faixa { padding: 8px 20px; border-bottom: 1px solid var(--line); background: var(--panel); display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; }
-  .status { color: var(--mut); font-size: 12px; white-space: pre-line; margin-left: auto; text-align: right; max-width: 45%; }
-  .status.aviso { color: #f2b134; }
-  .status.erro { color: #ff7a7a; }
-  .kpis { display: flex; flex-wrap: wrap; gap: 8px; }
-  .kpi { border: 1px solid var(--line); border-radius: 10px; padding: 5px 12px; background: var(--bg); }
-  .kpi .v { font-size: 17px; font-weight: 700; line-height: 1.2; }
-  .kpi .t { color: var(--mut); font-size: 11.5px; }
-  .kpi.bad .v { color: #ff7a7a; }
-  .nota { color: var(--mut); font-size: 12.5px; margin: 8px 0 0; }
-  .barra { display: grid; grid-template-columns: 175px 1fr 92px; gap: 8px; align-items: center; margin: 5px 0; font-size: 12.5px; }
-  .barra .b { height: 12px; background: #1a2744; border-radius: 6px; overflow: hidden; }
-  .barra .b i { display: block; height: 100%; background: #5b7bd5; }
-  .barra.cur .b i { background: #3ecf8e; }
-  .barra.cur { font-weight: 600; }
+
+  /* faixa de indicadores: 4 cards grandes e centralizados */
+  .faixa { padding: 20px 24px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; max-width: 1400px; margin: 0 auto; }
+  .kpi { border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; background: var(--card); box-shadow: var(--sombra); text-align: center;
+         display: flex; flex-direction: column; justify-content: center; min-height: 104px; }
+  .kpi .v { font-size: 32px; font-weight: 750; line-height: 1.15; letter-spacing: -.01em; }
+  .kpi .t { color: var(--mut); font-size: 13px; margin-top: 4px; }
+  .kpi.bad .v { color: var(--neg); }
+  .status { color: var(--mut); font-size: 12.5px; white-space: pre-line; text-align: center; max-width: 1400px; margin: 12px auto 0; }
+  .status:empty { display: none; }
+  .status.aviso { color: var(--warn); }
+  .status.erro { color: var(--neg); }
+
+  /* painel lateral: abas + cartões */
+  aside { background: var(--panel); overflow-y: auto; min-width: 0; display: flex; flex-direction: column; }
+  .abas { position: sticky; top: 0; z-index: 3; display: flex; gap: 4px; padding: 10px 14px 0; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .abas button { flex: 1; background: transparent; border: 0; border-bottom: 3px solid transparent; color: var(--mut); padding: 9px 6px 8px; cursor: pointer; font: inherit; font-weight: 600; font-size: 13px; }
+  .abas button:hover { color: var(--txt); }
+  .abas button.on { color: var(--txt); border-bottom-color: var(--bar); }
+  .pane { display: none; padding: 16px 14px 24px; }
+  .pane.on { display: block; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin: 0 0 14px; }
+  .card:last-child { margin-bottom: 0; }
+  .card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--mut); margin: 0 0 12px; font-weight: 700; }
+  .campo { margin: 0 0 14px; }
+  .campo > .lbl { display: block; font-size: 12.5px; color: var(--mut); margin-bottom: 6px; font-weight: 600; }
+  .ctl { margin: 0 0 12px; }
+  .ctl .top { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; margin-bottom: 2px; }
+  .ctl .top label { color: var(--mut); font-weight: 600; font-size: 12.5px; }
+  .ctl output { font-weight: 700; }
+  .ctl input[type=range] { width: 100%; margin: 4px 0 0; }
+  .nota { color: var(--mut); font-size: 12.5px; margin: 10px 0 0; }
+  .nota:first-child { margin-top: 0; }
+  .barra { display: grid; grid-template-columns: 170px 1fr 84px; gap: 10px; align-items: center; margin: 7px 0; font-size: 12.5px; }
+  .barra .b { height: 12px; background: var(--track); border-radius: 6px; overflow: hidden; }
+  .barra .b i { display: block; height: 100%; background: var(--bar); }
+  .barra.cur .b i { background: var(--pos); }
+  .barra.cur { font-weight: 650; }
   .barra span:last-child { text-align: right; }
   table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-  th, td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--line); }
+  th, td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--line); }
   th:nth-child(2), td:nth-child(2) { text-align: left; }
-  th { color: var(--mut); font-weight: 600; position: sticky; top: 0; background: var(--panel); }
-  .scroll { max-height: 380px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
+  th { color: var(--mut); font-weight: 600; position: sticky; top: 0; background: var(--card); }
+  th.sortavel { cursor: pointer; user-select: none; white-space: nowrap; }
+  th.sortavel:hover { color: var(--txt); }
+  th .seta { display: inline-block; width: 1em; margin-left: 2px; font-size: 10px; opacity: 0; }
+  th.sortavel:hover .seta { opacity: .45; }
+  th.ord { color: var(--txt); }
+  th.ord .seta { opacity: 1; }
+  .scroll { max-height: 440px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
   #tb tr { cursor: pointer; }
-  tr.hl td { background: #22345c; }
-  tr.sel td { background: #2c4580; }
-  tr.ext td { text-align: left; background: #16213a; color: #b8c4e0; font-size: 12px; line-height: 1.6; cursor: default; }
+  #tb td:first-child, #tb td:nth-child(n+3) { white-space: nowrap; }
+  tr.hl td { background: var(--hl); }
+  tr.sel td { background: var(--sel); }
+  tr.ext td { text-align: left; background: var(--ext); color: var(--ext-t); font-size: 12px; line-height: 1.6; cursor: default; }
   .tag { display: inline-block; min-width: 20px; text-align: center; border-radius: 4px; color: #0b1220; font-weight: 700; padding: 0 4px; }
   .tag.A { background: var(--A); } .tag.B { background: var(--B); } .tag.C { background: var(--C); } .tag.N { background: var(--N); }
   .tb2 td, .tb2 th { text-align: center; }
   .tb2 td:nth-child(2), .tb2 th:nth-child(2) { text-align: center; }
   .tb2 td.l, .tb2 th.l { text-align: left; }
-  td.dg { background: #22345c; font-weight: 700; }
-  .pos { color: #3ecf8e; } .neg { color: #ff7a7a; }
+  td.dg { background: var(--on); font-weight: 700; }
+  .pos { color: var(--pos); } .neg { color: var(--neg); }
   .mut { color: var(--mut); }
-  code { background: #1a2744; padding: 1px 5px; border-radius: 4px; }
-  #busca { width: 100%; background: #0b1220; color: var(--txt); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font: inherit; margin-bottom: 8px; }
-  #selcard { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 12.5px; line-height: 1.55; }
+  code { background: var(--chip); padding: 1px 5px; border-radius: 4px; }
+  #busca { width: 100%; background: var(--inp); color: var(--txt); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: inherit; margin-bottom: 10px; }
+  #selcard { border: 1px dashed var(--line); border-radius: 10px; padding: 10px 12px; font-size: 12.5px; line-height: 1.6; }
   #selcard.vazio { color: var(--mut); }
+  #selcard:not(.vazio) { border-style: solid; }
   #selcard .end { color: var(--mut); word-break: break-word; }
-  .ok { color: #3ecf8e; }
-  @media (max-width: 900px) { body { height: auto; } main { display: block; } #resizer { display: none; } #cena { height: 65vh; } }
+  .ok { color: var(--pos); }
+  .tp td, .tp th { text-align: right; } .tp td:first-child, .tp th:first-child { text-align: left; }
+  .tp td:nth-child(2), .tp th:nth-child(2) { text-align: right; }
+  .tp code { font-size: 11.5px; } .tp .alt { color: var(--warn); font-weight: 600; }
+  .comp-sel { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: end; }
+  .comp-sel .lbl { display: block; font-size: 12.5px; color: var(--mut); margin-bottom: 6px; font-weight: 600; }
+  .comp-sel select { width: 100%; background: var(--inp); color: var(--txt); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: inherit; }
+  @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 900px) { body { height: auto; } main { display: block; } #resizer { display: none; } #cena { height: 65vh; } aside { overflow: visible; } }
+  @media (max-width: 560px) { .kpis { grid-template-columns: 1fr; } }
 </style>
+<script>try { document.documentElement.dataset.theme = localStorage.getItem('armazem.tema') === 'light' ? 'light' : 'dark'; } catch (e) { document.documentElement.dataset.theme = 'dark'; }</script>
 <script type="importmap">
 { "imports": {
     "three": "./lib/three.module.js",
@@ -99,6 +145,7 @@
   <a class="btn" href="Planilha_Armazem3D.xlsx" download title="Planilha da aula: 151 SKUs sem classificação ABC, roteiro, abas de cálculo e parâmetros do armazém">Baixar planilha da aula (.xlsx)</a>
   <label class="btn" title="Lê a aba Base (com as classes que a turma preencheu) e a aba Parâmetros">Importar planilha<input type="file" id="csv" accept=".xlsx,.xls,.csv,.txt" hidden></label>
   <button class="btn" id="rst">Dados de exemplo</button>
+  <button class="btn" id="tema" title="Alternar entre tema claro e escuro"></button>
 </header>
 <div class="faixa"><div class="kpis" id="kpis"></div><div class="status" id="status"></div></div>
 <main>
@@ -118,44 +165,97 @@
   </div>
   <div id="resizer" title="Arraste para ajustar a largura"></div>
   <aside>
-    <h2>Parâmetros da simulação</h2>
-    <div class="row2"><span>Critério da curva ABC</span>
-      <div class="seg" id="scrit"><button data-c="giro" class="on">Giro (retiradas)</button><button data-c="valor">Valor (R$)</button></div></div>
-    <div class="row2"><span>Endereçamento</span>
-      <div class="seg" id="smodo"><button data-m="codigo">Antes · ordem do código</button><button data-m="aleatorio">Antes · aleatório</button><button data-m="abc" class="on">Depois · pela curva ABC</button></div></div>
-    <p class="nota" id="cortes" style="margin:6px 0 10px"></p>
-    <div class="ctl"><label for="dias">Cobertura de estoque</label><input type="range" id="dias" min="7" max="90" value="45"><output id="odias"></output></div>
-    <div class="ctl"><label for="blocos">Blocos de estantes</label><input type="range" id="blocos" min="2" max="5" value="3"><output id="oblocos"></output></div>
-    <div class="ctl"><label for="mods">Módulos por fila</label><input type="range" id="mods" min="4" max="16" value="9"><output id="omods"></output></div>
-    <div class="ctl"><label for="niveis">Níveis por estante</label><input type="range" id="niveis" min="1" max="6" value="4"><output id="oniveis"></output></div>
-    <p class="nota">Estoque = demanda diária × dias de cobertura → caixas master → paletes. Palete, limites de peso, layout e penalidades vêm da planilha (aba Parâmetros). <b>Depois</b> usa as classes da aba Base: A perto da doca, C no fundo.</p>
+    <nav class="abas" id="abas">
+      <button data-aba="sim" class="on">Simulação</button>
+      <button data-aba="prod">Produtos</button>
+      <button data-aba="analise">Análise</button>
+      <button data-aba="conf">Conferência</button>
+      <button data-aba="param">Parâmetros</button>
+    </nav>
 
-    <h2>Produto selecionado</h2>
-    <div id="selcard" class="vazio">Clique numa carga no armazém ou numa linha da tabela.</div>
+    <div class="pane on" data-pane="sim">
+      <section class="card">
+        <h2>Critério e endereçamento</h2>
+        <div class="campo"><span class="lbl">Critério da curva ABC</span>
+          <div class="seg full" id="scrit"><button data-c="giro" class="on">Giro (retiradas)</button><button data-c="valor">Valor (R$)</button></div></div>
+        <div class="campo"><span class="lbl">Endereçamento</span>
+          <div class="seg full" id="smodo"><button data-m="codigo">Antes · ordem do código</button><button data-m="aleatorio">Antes · aleatório</button><button data-m="abc" class="on">Depois · pela curva ABC</button></div></div>
+        <p class="nota" id="cortes"></p>
+      </section>
+      <section class="card">
+        <h2>Armazém e estoque</h2>
+        <div class="ctl"><div class="top"><label for="dias">Cobertura de estoque</label><output id="odias"></output></div><input type="range" id="dias" min="7" max="90" value="45"></div>
+        <div class="ctl"><div class="top"><label for="blocos">Blocos de estantes</label><output id="oblocos"></output></div><input type="range" id="blocos" min="2" max="5" value="3"></div>
+        <div class="ctl"><div class="top"><label for="mods">Módulos por fila</label><output id="omods"></output></div><input type="range" id="mods" min="4" max="16" value="9"></div>
+        <div class="ctl"><div class="top"><label for="niveis">Níveis por estante</label><output id="oniveis"></output></div><input type="range" id="niveis" min="1" max="6" value="4"></div>
+        <p class="nota">Estoque = demanda diária × dias de cobertura → caixas master → paletes. Palete, limites de peso, layout e penalidades vêm da planilha (aba Parâmetros). <b>Depois</b> usa as classes da aba Base: A perto da doca, C no fundo.</p>
+      </section>
+    </div>
 
-    <h2>Endereços por produto</h2>
-    <input id="busca" placeholder="Buscar por SKU ou produto…">
-    <div class="scroll"><table id="tb"></table></div>
-    <p class="nota">Endereço = <code>F</code>ila-<code>M</code>ódulo-<code>N</code>ível-<code>P</code>osição. Itens maiores que o palete (mesa, estante, paleteira) ocupam a posição dupla P1+P2.</p>
+    <div class="pane" data-pane="prod">
+      <section class="card">
+        <h2>Produto selecionado</h2>
+        <div id="selcard" class="vazio">Clique numa carga no armazém ou numa linha da tabela.</div>
+      </section>
+      <section class="card">
+        <h2>Endereços por produto</h2>
+        <input id="busca" placeholder="Buscar por SKU ou produto…">
+        <div class="scroll"><table id="tb"></table></div>
+        <p class="nota">Clique no título de uma coluna para ordenar (crescente ↔ decrescente). Endereço = <code>F</code>ila-<code>M</code>ódulo-<code>N</code>ível-<code>P</code>osição. Itens maiores que o palete (mesa, estante, paleteira) ocupam a posição dupla P1+P2.</p>
+      </section>
+    </div>
 
-    <h2>Percurso mensal de separação</h2>
-    <div id="comp"></div>
-    <p class="nota" id="ncomp"></p>
+    <div class="pane" data-pane="analise">
+      <section class="card">
+        <h2>Comparar cenários</h2>
+        <div class="comp-sel">
+          <label><span class="lbl">Cenário base</span><select id="cmpA"></select></label>
+          <button class="btn" id="cmpTroca" title="Trocar os dois cenários">⇄</button>
+          <label><span class="lbl">Comparar com</span><select id="cmpB"></select></label>
+        </div>
+        <p class="nota">Vale para os gráficos de percurso e para a tabela "Quem ganha e quem perde".</p>
+      </section>
+      <section class="card">
+        <h2>Percurso mensal de separação</h2>
+        <div id="comp"></div>
+        <p class="nota" id="ncomp"></p>
+      </section>
+      <section class="card">
+        <h2>Quem ganha e quem perde (por classe)</h2>
+        <table class="tb2" id="gp"></table>
+        <p class="nota" id="ngp"></p>
+      </section>
+      <section class="card">
+        <h2>ABC duplo: valor × giro</h2>
+        <table class="tb2" id="mx"></table>
+        <p class="nota" id="nmx"></p>
+      </section>
+      <section class="card">
+        <h2>Uso por nível</h2>
+        <table class="tb2" id="niv"></table>
+        <p class="nota" id="nnivel"></p>
+      </section>
+    </div>
 
-    <h2>Quem ganha e quem perde (por classe)</h2>
-    <table class="tb2" id="gp"></table>
-    <p class="nota" id="ngp"></p>
+    <div class="pane" data-pane="conf">
+      <section class="card">
+        <h2>Conferência da classificação</h2>
+        <div id="conf"></div>
+      </section>
+    </div>
 
-    <h2>ABC duplo: valor × giro</h2>
-    <table class="tb2" id="mx"></table>
-    <p class="nota" id="nmx"></p>
-
-    <h2>Conferência da classificação</h2>
-    <div id="conf"></div>
-
-    <h2>Uso por nível</h2>
-    <table class="tb2" id="niv"></table>
-    <p class="nota" id="nnivel"></p>
+    <div class="pane" data-pane="param">
+      <section class="card">
+        <h2>Origem dos valores</h2>
+        <p class="nota" id="porigem"></p>
+      </section>
+      <section class="card"><h2>Distâncias do layout</h2><table class="tb2 tp" id="pdist"></table></section>
+      <section class="card"><h2>Alturas</h2><table class="tb2 tp" id="palt"></table></section>
+      <section class="card"><h2>Palete e posições</h2><table class="tb2 tp" id="ppal"></table></section>
+      <section class="card"><h2>Peso máximo e penalidade por nível</h2><table class="tb2 tp" id="pniv"></table></section>
+      <section class="card"><h2>Curva ABC e percurso</h2><table class="tb2 tp" id="pabc"></table></section>
+      <section class="card"><h2>Dimensões resultantes do galpão</h2><table class="tb2 tp" id="pdim"></table><p class="nota" id="pdimn"></p></section>
+    </div>
   </aside>
 </main>
 
@@ -178,18 +278,25 @@ const rotulo = c => c === 'N' ? '–' : c;
 let dados = window.DADOS, analise, sim, cur;
 let crit = 'giro', modo = 'abc', dias = 45, cfg = { B: 3, M: 9, N: 4 }, filtro = 'T', sel = -1, hover = -1, busca = '';
 let classeDe, picks = [], inst = {}, dockX = 0, porProduto;
-let limites = ARM.configurar().limites, cruza = 'seguinte';           // vêm da planilha (aba Parâmetros)
+let paramsAtuais = ARM.configurar(), limites = paramsAtuais.limites, cruza = 'seguinte';           // vêm da planilha (aba Parâmetros)
 
 // ---------- cena ----------
 const host = document.getElementById('cena');
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 host.prepend(renderer.domElement);
-const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b1220);
+const TEMAS = {
+  dark:  { bg: 0x0b1220, piso: 0x1c2640, doca: 0x24407a, rua: 0x2a3555, predio: 0x40507d, ground: 0x34405f, hemi: 1.25, vazia: 0x8aa0d6, vazOp: .07,
+           tRua: '#6f7fa6', tEixo: '#c8d3f0', tDoca: '#9fb4f0' },
+  light: { bg: 0xe9edf5, piso: 0xd3dae8, doca: 0xb4c6ee, rua: 0xc2cadd, predio: 0x8a97b8, ground: 0xaab4cc, hemi: 1.6, vazia: 0x4a64b8, vazOp: .10,
+           tRua: '#5d6a86', tEixo: '#2b3552', tDoca: '#3a5bb0' }
+};
+let tema = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark', T = TEMAS[tema];
+const scene = new THREE.Scene(); scene.background = new THREE.Color(T.bg);
 const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 800);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; controls.maxPolarAngle = Math.PI * 0.495;
-scene.add(new THREE.HemisphereLight(0xffffff, 0x34405f, 1.25));
+const hemi = new THREE.HemisphereLight(0xffffff, T.ground, T.hemi); scene.add(hemi);
 const sol = new THREE.DirectionalLight(0xffffff, 1.3); sol.position.set(-15, 40, -10); scene.add(sol);
 const sol2 = new THREE.DirectionalLight(0x99aaff, .5); sol2.position.set(30, 20, 40); scene.add(sol2);
 const estatico = new THREE.Group(), dinamico = new THREE.Group(), destaqueG = new THREE.Group(), rotaG = new THREE.Group();
@@ -222,27 +329,27 @@ function instanciar(n, cor, opts = {}) {
 function coloca(im, i, x, y, z, sx, sy, sz) { dummy.position.set(x, y, z); dummy.scale.set(sx, sy, sz); dummy.updateMatrix(); im.setMatrixAt(i, dummy.matrix); }
 
 // ---------- parte fixa: piso, prédio, estantes ----------
-function construirEstatico() {
+function construirEstatico(manterCamera = false) {
   limpar(estatico);
   const d = ARM.dims(cfg), { W, L, filas } = d; dockX = d.dockX;
-  const piso = new THREE.Mesh(new THREE.PlaneGeometry(W, L), new THREE.MeshStandardMaterial({ color: 0x1c2640, roughness: 1 }));
+  const piso = new THREE.Mesh(new THREE.PlaneGeometry(W, L), new THREE.MeshStandardMaterial({ color: T.piso, roughness: 1 }));
   piso.rotation.x = -Math.PI / 2; piso.position.set(W / 2, 0, L / 2); estatico.add(piso);
-  const doca = new THREE.Mesh(new THREE.PlaneGeometry(W, G.FZ), new THREE.MeshStandardMaterial({ color: 0x24407a, roughness: 1 }));
+  const doca = new THREE.Mesh(new THREE.PlaneGeometry(W, G.FZ), new THREE.MeshStandardMaterial({ color: T.doca, roughness: 1 }));
   doca.rotation.x = -Math.PI / 2; doca.position.set(W / 2, 0.01, G.FZ / 2); estatico.add(doca);
   for (let k = 0; k <= cfg.B; k++) {                                  // ruas
-    const r = new THREE.Mesh(new THREE.PlaneGeometry(G.AISLE - 0.3, L - G.FZ - G.BACK), new THREE.MeshStandardMaterial({ color: 0x2a3555, roughness: 1 }));
+    const r = new THREE.Mesh(new THREE.PlaneGeometry(G.AISLE - 0.3, L - G.FZ - G.BACK), new THREE.MeshStandardMaterial({ color: T.rua, roughness: 1 }));
     r.rotation.x = -Math.PI / 2; r.position.set(ARM.xA(k), 0.012, G.FZ + (L - G.FZ - G.BACK) / 2); estatico.add(r);
-    const t = texto('RUA ' + (k + 1), '#6f7fa6', 2.6); t.position.set(ARM.xA(k), 0.3, L - 1.2); estatico.add(t);
+    const t = texto('RUA ' + (k + 1), T.tRua, 2.6); t.position.set(ARM.xA(k), 0.3, L - 1.2); estatico.add(t);
   }
   const HP = Math.max(8, cfg.N * G.ALT_NIVEL + 2);                      // altura do galpão
-  const pred = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(W, HP, L)), new THREE.LineBasicMaterial({ color: 0x40507d, transparent: true, opacity: .6 }));
+  const pred = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(W, HP, L)), new THREE.LineBasicMaterial({ color: T.predio, transparent: true, opacity: .6 }));
   pred.position.set(W / 2, HP / 2, L / 2); estatico.add(pred);
   const nd = Math.max(2, Math.round(W / 7));
   for (let i = 0; i < nd; i++) {                                      // portas da doca
     const p = new THREE.Mesh(GBOX, new THREE.MeshStandardMaterial({ color: 0xcf7a2d, transparent: true, opacity: .3, depthWrite: false }));
     p.scale.set(3, 3.4, .25); p.position.set(W / nd * (i + .5), 1.7, 0.1); p.userData.proprio = true; estatico.add(p);
   }
-  const td = texto('DOCA · RECEBIMENTO / EXPEDIÇÃO', '#9fb4f0', 11);
+  const td = texto('DOCA · RECEBIMENTO / EXPEDIÇÃO', T.tDoca, 11);
   const pisoTxt = new THREE.Mesh(new THREE.PlaneGeometry(11, 11 * 140 / 512), new THREE.MeshBasicMaterial({ map: td.material.map, transparent: true }));
   pisoTxt.rotation.x = -Math.PI / 2; pisoTxt.position.set(dockX, 0.03, 4); estatico.add(pisoTxt);
 
@@ -256,12 +363,13 @@ function construirEstatico() {
       for (let m = 0; m < cfg.M; m++) for (let n = 0; n < cfg.N; n++)
         coloca(vigas, iv++, x + dx, ARM.beamY(n), G.FZ + m * G.MOD + G.MOD / 2, 0.06, 0.12, G.MOD - 0.06);
     }
-    const t = texto('F' + (f + 1), '#c8d3f0', 1.6); t.position.set(x, H + 0.5, G.FZ - 0.4); estatico.add(t);
+    const t = texto('F' + (f + 1), T.tEixo, 1.6); t.position.set(x, H + 0.5, G.FZ - 0.4); estatico.add(t);
   }
   estatico.add(postes, vigas);
   for (let n = 0; n < cfg.N; n++) {
-    const t = texto('N' + n, '#c8d3f0', 1.6); t.position.set(ARM.xA(0) - 1.0, ARM.beamY(n) + 0.7, G.FZ - 0.6); estatico.add(t);
+    const t = texto('N' + n, T.tEixo, 1.6); t.position.set(ARM.xA(0) - 1.0, ARM.beamY(n) + 0.7, G.FZ - 0.6); estatico.add(t);
   }
+  if (manterCamera) return;
   const tgt = new THREE.Vector3(W / 2, 0.6 + cfg.N * 0.4, G.FZ + (cfg.M * G.MOD) * 0.45);
   const dist = Math.max(W * 1.5, L * 1.15);
   controls.target.copy(tgt); camera.position.set(tgt.x + dist * 0.5, 6 + dist * 0.8, tgt.z - dist * 0.62); controls.update();
@@ -281,7 +389,7 @@ function construirDinamico() {
   const slots = sim.slots, ocup = cur.ocup;
   let nVaz = 0, nBase = 0; const cont = { A: 0, B: 0, C: 0, N: 0 };
   slots.forEach((s, i) => { const o = ocup[i]; if (!o) nVaz++; else if (o.ref === undefined) { nBase++; cont[classeDe.get(o.id)] += o.n; } });
-  const bases = instanciar(nBase, 0x8a6a3c), vazias = instanciar(nVaz, 0x8aa0d6, { transparent: true, opacity: .07, depthWrite: false });
+  const bases = instanciar(nBase, 0x8a6a3c), vazias = instanciar(nVaz, T.vazia, { transparent: true, opacity: T.vazOp, depthWrite: false });
   for (const c of CLS) inst[c] = new THREE.InstancedMesh(GBOX, matN[c], Math.max(cont[c], 1));
   const k = { A: 0, B: 0, C: 0, N: 0 }; let ib = 0, iv = 0;
   const pickMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
@@ -369,7 +477,26 @@ renderer.domElement.addEventListener('pointerup', e => {
   if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4) return;
   const { hit } = pick(e); selecionar(hit ? hit.object.userData.id : -1);
 });
-function selecionar(id) { sel = id === sel ? -1 : id; desenharDestaque(); desenharRota(); cartao(); tabela(); }
+function selecionar(id) {
+  sel = id === sel ? -1 : id; desenharDestaque(); desenharRota(); cartao(); tabela();
+  if (sel >= 0) abrirAba('prod');
+}
+function abrirAba(nome) {
+  document.querySelectorAll('#abas button').forEach(b => b.classList.toggle('on', b.dataset.aba === nome));
+  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.dataset.pane === nome));
+}
+document.getElementById('abas').addEventListener('click', e => { const a = e.target.dataset.aba; if (a) abrirAba(a); });
+
+// tema claro/escuro (preferência guardada no navegador)
+function aplicaTema(novo, salvar = true) {
+  tema = novo; T = TEMAS[tema]; document.documentElement.dataset.theme = tema;
+  scene.background.set(T.bg); hemi.groundColor.set(T.ground); hemi.intensity = T.hemi;
+  if (salvar) { try { localStorage.setItem('armazem.tema', tema); } catch (e) {} }
+  const b = document.getElementById('tema');
+  b.textContent = tema === 'dark' ? '☀ Tema claro' : '☾ Tema escuro';
+  if (analise) { construirEstatico(true); construirDinamico(); desenharDestaque(); desenharRota(); }
+}
+document.getElementById('tema').onclick = () => aplicaTema(tema === 'dark' ? 'light' : 'dark');
 function marcarLinhas() {
   document.querySelectorAll('#tb tr[data-id]').forEach(tr => {
     tr.classList.toggle('sel', +tr.dataset.id === sel); tr.classList.toggle('hl', +tr.dataset.id === hover);
@@ -393,11 +520,28 @@ function cartao() {
     `<span class="end">${ends.length ? ends.join(' · ') : 'sem endereço (sem espaço)'}</span>`;
 }
 
+const colar = new Intl.Collator('pt-BR', { numeric: true, sensitivity: 'base' });
+const COLUNAS = [                                   // chave, título, valor usado na ordenação
+  ['rank', '#', r => r.rank],
+  ['sku', 'SKU · Produto', r => r.cod + ' ' + r.nome],
+  ['cl', 'Cl.', r => 'ABCN'.indexOf(r.classe)],
+  ['cx', 'Cx', r => sim.plano.get(r.id).caixas],
+  ['pal', 'Pal.', r => sim.plano.get(r.id).paletes.length],
+  ['kg', 'Kg', r => sim.plano.get(r.id).peso],
+  ['end', 'Endereço', r => (porProduto.get(r.id) || [])[0]?.slot.codigo ?? '']
+];
+let ordem = { k: 'rank', d: 1 };                    // d: 1 = crescente, -1 = decrescente
 function tabela() {
   const q = busca.trim().toLowerCase();
   const rows = analise[crit].filter(r => !q || r.nome.toLowerCase().includes(q) || String(r.cod).toLowerCase().includes(q));
+  const val = COLUNAS.find(c => c[0] === ordem.k)[2];
+  rows.sort((a, b) => {
+    const x = val(a), y = val(b);
+    const c = typeof x === 'string' ? colar.compare(x, y) : x - y;
+    return (c || a.rank - b.rank) * ordem.d;
+  });
   document.getElementById('tb').innerHTML =
-    `<tr><th>#</th><th>SKU · Produto</th><th>Cl.</th><th>Cx</th><th>Pal.</th><th>Kg</th><th>Endereço</th></tr>` +
+    '<tr>' + COLUNAS.map(([k, t]) => `<th class="sortavel${ordem.k === k ? ' ord' : ''}" data-k="${k}" aria-sort="${ordem.k === k ? (ordem.d > 0 ? 'ascending' : 'descending') : 'none'}" title="Ordenar por ${esc(t)}">${t}<span class="seta">${ordem.k === k ? (ordem.d > 0 ? '▲' : '▼') : '▲'}</span></th>`).join('') + '</tr>' +
     rows.map(r => {
       const p = sim.plano.get(r.id), lista = porProduto.get(r.id) || [];
       const end = lista.length ? lista[0].slot.codigo + (lista.length > 1 ? ` <span class="mut">+${lista.length - 1}</span>` : '') : '<span class="neg">sem espaço</span>';
@@ -405,6 +549,9 @@ function tabela() {
       const ext = (r.id === sel && lista.length > 1) ? `<tr class="ext"><td colspan="7"><b>${lista.length} endereços</b> (do mais perto ao mais longe da doca):<br>${todos.join('<br>')}</td></tr>` : '';
       return `<tr data-id="${r.id}" title="${esc(todos.join(' | '))}"><td>${r.rank}</td><td><span class="mut">${esc(r.cod)}</span> ${esc(r.nome)}</td><td><span class="tag ${r.classe}">${rotulo(r.classe)}</span></td><td>${fmt(p.caixas)}</td><td>${p.paletes.length}</td><td>${fmt(p.peso)}</td><td>${end}</td></tr>${ext}`;
     }).join('');
+  document.querySelectorAll('#tb th[data-k]').forEach(th => {
+    th.onclick = () => { const k = th.dataset.k; ordem = { k, d: ordem.k === k ? -ordem.d : 1 }; tabela(); };
+  });
   document.querySelectorAll('#tb tr[data-id]').forEach(tr => {
     tr.onclick = () => selecionar(+tr.dataset.id);
     tr.onmouseenter = () => { hover = +tr.dataset.id; desenharDestaque(); marcarLinhas(); };
@@ -413,22 +560,26 @@ function tabela() {
   marcarLinhas();
 }
 
-const NOME_MODO = { codigo: 'Antes · ordem do código', aleatorio: 'Antes · aleatório' };
+const CEN = { codigo: 'Ordem do código', aleatorio: 'Aleatório', giro: 'ABC por giro', valor: 'ABC por valor' };
+let cmpA = 'codigo', cmpB = 'giro';
 function painelPercurso() {
   const c = sim.cenarios;
-  const linhas = [['Depois · ABC por giro', c.giro.met, 'giro'], ['Depois · ABC por valor', c.valor.met, 'valor'], [NOME_MODO.codigo, c.codigo.met, 'codigo'], [NOME_MODO.aleatorio, c.aleatorio.met, 'aleatorio']];
-  const max = Math.max(...linhas.map(l => l[1].percurso)), atual = modo === 'abc' ? crit : modo;
+  const linhas = Object.keys(CEN).map(k => [CEN[k], c[k].met, k]);
+  const max = Math.max(...linhas.map(l => l[1].percurso));
   document.getElementById('comp').innerHTML = linhas.map(([n, m, k]) =>
-    `<div class="barra ${k === atual ? 'cur' : ''}" title="${fmt(m.distIV, 1)} m por retirada (ida e volta)"><span>${n}</span><div class="b"><i style="width:${m.percurso / max * 100}%"></i></div><span>${fmt(m.percurso)} m</span></div>`).join('');
-  const redG = (1 - c.giro.met.percurso / c.codigo.met.percurso) * 100, redV = (1 - c.valor.met.percurso / c.codigo.met.percurso) * 100;
-  document.getElementById('ncomp').innerHTML =
-    `Percurso total no mês (m, ida e volta), ponderado pelas retiradas. Frente à <b>ordem do código</b>, o ABC por <b>giro</b> reduz <b>${fmt(redG, 0)}%</b> e o ABC por <b>valor</b> ${fmt(redV, 0)}%. ` +
-    `O giro é o que gera deslocamento, por isso o slotting usa a classe de giro; o valor serve para a política de estoque e o controle (apostila, cap. 4 e 12).`;
+    `<div class="barra ${k === cmpA || k === cmpB ? 'cur' : ''}" title="${fmt(m.distIV, 1)} m por retirada (ida e volta)"><span>${n}${k === cmpA ? ' <span class="mut">(base)</span>' : k === cmpB ? ' <span class="mut">(comparado)</span>' : ''}</span><div class="b"><i style="width:${m.percurso / max * 100}%"></i></div><span>${fmt(m.percurso)} m</span></div>`).join('');
+  const pa = c[cmpA].met.percurso, pb = c[cmpB].met.percurso, v = (pb / pa - 1) * 100;
+  document.getElementById('ncomp').innerHTML = cmpA === cmpB
+    ? 'Escolha dois cenários diferentes para comparar.'
+    : `Percurso total no mês (m, ida e volta), ponderado pelas retiradas. <b>${CEN[cmpB]}</b> frente a <b>${CEN[cmpA]}</b>: ` +
+      `<b class="${v <= 0 ? 'pos' : 'neg'}">${v > 0 ? '+' : ''}${fmt(v, 1)}%</b> (${fmt(pb - pa)} m). ` +
+      `O giro é o que gera deslocamento, por isso o slotting usa a classe de giro; o valor serve para a política de estoque e o controle (apostila, cap. 4 e 12).`;
 }
 
 function painelGanhaPerde() {
-  const rows = analise[crit], antesK = modo === 'aleatorio' ? 'aleatorio' : 'codigo';
-  const ant = sim.cenarios[antesK].met.percursoPorItem, dep = sim.cenarios[crit].met.percursoPorItem;
+  const ck = ['giro', 'valor'].includes(cmpB) ? cmpB : ['giro', 'valor'].includes(cmpA) ? cmpA : crit;   // critério que define as classes
+  const rows = analise[ck];
+  const ant = sim.cenarios[cmpA].met.percursoPorItem, dep = sim.cenarios[cmpB].met.percursoPorItem;
   const classes = ['A', 'B', 'C'].concat(rows.some(r => r.classe === 'N') ? ['N'] : []);
   let tn = 0, ta = 0, td = 0, tr = 0;
   const lin = classes.map(c => {
@@ -440,11 +591,42 @@ function painelGanhaPerde() {
   }).join('');
   const vt = ta ? (td / ta - 1) * 100 : 0;
   document.getElementById('gp').innerHTML =
-    `<tr><th>Classe ${crit === 'valor' ? 'valor' : 'giro'}</th><th>SKUs</th><th>Retir./mês</th><th>Antes (m)</th><th>Depois (m)</th><th>Variação</th></tr>` + lin +
+    `<tr><th>Classe ${ck === 'valor' ? 'valor' : 'giro'}</th><th>SKUs</th><th>Retir./mês</th><th>${CEN[cmpA]} (m)</th><th>${CEN[cmpB]} (m)</th><th>Variação</th></tr>` + lin +
     `<tr><td><b>Total</b></td><td><b>${tn}</b></td><td><b>${fmt(tr)}</b></td><td><b>${fmt(ta)}</b></td><td><b>${fmt(td)}</b></td><td class="${vt <= 0 ? 'pos' : 'neg'}"><b>${vt > 0 ? '+' : ''}${fmt(vt, 1)}%</b></td></tr>`;
   document.getElementById('ngp').textContent =
-    `Antes = ${NOME_MODO[antesK].replace('Antes · ', '')}; Depois = endereçamento pela curva ABC por ${crit === 'valor' ? 'valor' : 'giro'}. Percurso em m/mês (ida e volta). ` +
+    `Base = ${CEN[cmpA]}; comparado = ${CEN[cmpB]}. SKUs agrupados pela classe de ${ck === 'valor' ? 'valor' : 'giro'}. Percurso em m/mês (ida e volta). ` +
     `Todo ganho de um SKU de giro alto vem de empurrar um de giro baixo para o fundo: a classe C pode piorar, e é esperado.`;
+}
+
+function painelParametros() {
+  const p = paramsAtuais.params, pad = ARM.PADRAO;
+  const nAlt = Object.keys(pad).filter(k => p[k] !== pad[k]).length;
+  document.getElementById('porigem').innerHTML = nAlt
+    ? `<b>${nAlt}</b> valor(es) diferente(s) do padrão (em <span class="alt">laranja</span>), vindos da planilha importada. Para mudar, edite a aba Parâmetros da planilha e importe de novo.`
+    : 'Valores padrão do app. Para mudar, edite a aba Parâmetros da planilha e importe de novo.';
+  const tab = (id, linhas, un) => {
+    document.getElementById(id).innerHTML = `<tr><th>Parâmetro</th><th>Valor</th><th>Padrão</th></tr>` + linhas.map(([rot, k, u]) => {
+      const dif = p[k] !== pad[k];
+      return `<tr><td>${rot}<br><code>${k}</code></td><td class="${dif ? 'alt' : ''}">${fmt(p[k], p[k] % 1 ? 2 : 0)} ${u}</td><td class="mut">${fmt(pad[k], pad[k] % 1 ? 2 : 0)} ${u}</td></tr>`;
+    }).join('');
+  };
+  tab('pdist', [['Largura da rua', 'RUA_LARGURA_M', 'm'], ['Profundidade da fila', 'FILA_PROFUNDIDADE_M', 'm'], ['Folga entre filas costas com costas', 'FILAS_FOLGA_M', 'm'],
+    ['Comprimento do módulo', 'MODULO_COMPRIMENTO_M', 'm'], ['Profundidade da doca', 'DOCA_PROFUNDIDADE_M', 'm'], ['Folga no fundo', 'FUNDO_FOLGA_M', 'm']]);
+  tab('palt', [['Altura entre níveis', 'NIVEL_ALTURA_M', 'm'], ['Altura do palete', 'PALETE_ALTURA_CM', 'cm'], ['Altura máxima da carga', 'CARGA_ALTURA_MAX_CM', 'cm']]);
+  tab('ppal', [['Comprimento do palete', 'PALETE_COMPRIMENTO_CM', 'cm'], ['Largura do palete', 'PALETE_LARGURA_CM', 'cm'], ['Comprimento da posição dupla', 'POSICAO_DUPLA_COMPRIMENTO_CM', 'cm'],
+    ['Peso máx. posição simples', 'PESO_MAX_POSICAO_SIMPLES_KG', 'kg'], ['Peso máx. posição dupla', 'PESO_MAX_POSICAO_DUPLA_KG', 'kg']]);
+  document.getElementById('pniv').innerHTML = `<tr><th>Nível</th><th>Peso máx.</th><th>Penalidade</th></tr>` +
+    [0, 1, 2, 3, 4, 5].map(n => {
+      const kp = `PESO_MAX_N${n}_KG`, kn = `PENALIDADE_N${n}_M`;
+      return `<tr><td>N${n}${n >= cfg.N ? ' <span class="mut">(não usado)</span>' : ''}</td><td class="${p[kp] !== pad[kp] ? 'alt' : ''}">${fmt(p[kp])} kg</td><td class="${p[kn] !== pad[kn] ? 'alt' : ''}">${fmt(p[kn], p[kn] % 1 ? 1 : 0)} m</td></tr>`;
+    }).join('');
+  tab('pabc', [['Limite da classe A', 'ABC_LIMITE_A_PCT', '%'], ['Limite da classe B', 'ABC_LIMITE_B_PCT', '%'],
+    ['Item que cruza o limite vai p/ a seguinte (1 = sim)', 'ABC_CRUZA_CLASSE_SEGUINTE', ''], ['Fator ida e volta', 'FATOR_IDA_VOLTA', '×']]);
+  const d = ARM.dims(cfg);
+  document.getElementById('pdim').innerHTML = `<tr><th>Medida</th><th>Valor</th></tr>` +
+    [['Largura do galpão', fmt(d.W, 1) + ' m'], ['Comprimento do galpão', fmt(d.L, 1) + ' m'], ['Altura das estantes', fmt(cfg.N * G.ALT_NIVEL, 1) + ' m'], ['Filas de estantes', d.filas],
+     ['Posições de palete', fmt(sim.slots.length)]].map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('');
+  document.getElementById('pdimn').textContent = 'Calculadas a partir dos parâmetros acima e dos controles da aba Simulação (blocos, módulos e níveis). Se algum valor não coubesse (ex.: módulo menor que 2 paletes), o app o ajusta e avisa no topo da página.';
 }
 
 function painelMatriz() {
@@ -499,7 +681,7 @@ function painel() {
     [met.semEndereco, 'paletes sem endereço (falta espaço)', met.semEndereco > 0]
   ].map(([v, t, bad]) => `<div class="kpi ${bad ? 'bad' : ''}"><div class="v">${v}</div><div class="t">${t}</div></div>`).join('');
 
-  painelPercurso(); painelGanhaPerde(); painelMatriz(); painelConferencia();
+  painelPercurso(); painelGanhaPerde(); painelMatriz(); painelConferencia(); painelParametros();
 
   document.getElementById('niv').innerHTML =
     `<tr><th>Nível</th><th>Posições</th><th>Ocupadas</th><th>Peso (kg)</th></tr>` +
@@ -538,6 +720,13 @@ document.getElementById('dias').oninput = e => { dias = +e.target.value; recalcu
 document.getElementById('blocos').oninput = e => { cfg = { ...cfg, B: +e.target.value }; recalcular(true); };
 document.getElementById('mods').oninput = e => { cfg = { ...cfg, M: +e.target.value }; recalcular(true); };
 document.getElementById('niveis').oninput = e => { cfg = { ...cfg, N: +e.target.value }; recalcular(true); };
+const selA = document.getElementById('cmpA'), selB = document.getElementById('cmpB');
+for (const el of [selA, selB]) el.innerHTML = Object.entries(CEN).map(([k, n]) => `<option value="${k}">${n}</option>`).join('');
+selA.value = cmpA; selB.value = cmpB;
+const refazComp = () => { painelPercurso(); painelGanhaPerde(); };
+selA.onchange = () => { cmpA = selA.value; refazComp(); };
+selB.onchange = () => { cmpB = selB.value; refazComp(); };
+document.getElementById('cmpTroca').onclick = () => { [cmpA, cmpB] = [cmpB, cmpA]; selA.value = cmpA; selB.value = cmpB; refazComp(); };
 document.getElementById('busca').oninput = e => { busca = e.target.value; tabela(); };
 
 // barra lateral redimensionável (largura guardada no navegador)
@@ -600,7 +789,7 @@ function parametrosDeLinhas(linhas) {
 }
 function aplicar(produtos, params, nParam, origem) {
   if (produtos.length < 3) throw new Error('Encontrei menos de 3 produtos válidos. Confira a aba Base.');
-  const r = ARM.configurar(params); limites = r.limites; cruza = r.cruza;
+  const r = ARM.configurar(params); paramsAtuais = r; limites = r.limites; cruza = r.cruza;
   carregar(produtos);
   const av = [...r.avisos];
   if (produtos.ignoradas) av.push(`${produtos.ignoradas} linha(s) de produto ignorada(s) (nome, custo ou demanda vazios/zero).`);
@@ -611,7 +800,7 @@ function aplicar(produtos, params, nParam, origem) {
   status(`${origem} · ${n} SKUs · ${classes} · ${nParam ? nParam + ' parâmetros lidos' : 'parâmetros padrão'}`, av);
 }
 document.getElementById('rst').onclick = () => {
-  const r = ARM.configurar({}); limites = r.limites; cruza = r.cruza; carregar(window.DADOS);
+  const r = ARM.configurar({}); paramsAtuais = r; limites = r.limites; cruza = r.cruza; carregar(window.DADOS);
   status(`Dados de exemplo · ${window.DADOS.length} SKUs · sem classes (usando as calculadas) · parâmetros padrão`);
 };
 document.getElementById('csv').onchange = async e => {
@@ -633,6 +822,7 @@ document.getElementById('csv').onchange = async e => {
 };
 
 carregar(window.DADOS);
+aplicaTema(tema, false);
 status(`Dados de exemplo · ${window.DADOS.length} SKUs · sem classes (usando as calculadas) · parâmetros padrão`);
 loop();
 window.__arm = { get cur() { return cur; }, get sim() { return sim; }, get analise() { return analise; }, selecionar };
